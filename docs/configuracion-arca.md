@@ -9,7 +9,7 @@
 - Un único CUIT emisor, normalizado a 11 dígitos y validado mediante su dígito verificador.
 - Un único punto de venta, con valor permitido entre `1` y `99999`.
 
-La persistencia de estos valores se incorporará en `mod003`. Hasta entonces, el modelo existe únicamente en memoria.
+`mod003` incorpora el almacenamiento clave-valor necesario para persistir estos datos. La carga y edición desde la interfaz se implementará en una rama posterior.
 
 ## Configuración futura
 
