@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "mod*"
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restaurar dependencias
+        run: dotnet restore ArcaFacturador.sln
+
+      - name: Compilar
+        run: dotnet build ArcaFacturador.sln --configuration Release --no-restore
+
+      - name: Ejecutar tests
+        run: dotnet test ArcaFacturador.sln --configuration Release --no-build

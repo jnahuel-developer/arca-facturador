@@ -1,0 +1,15 @@
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.suo
+TestResults/
+artifacts/
+*.db
+*.db-shm
+*.db-wal
+*.pfx
+*.p12
+*.key
+appsettings.Local.json
