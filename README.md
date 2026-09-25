@@ -2,7 +2,7 @@
 
 Aplicación Windows local para automatizar la emisión de Facturas C de un único negocio mediante los servicios de ARCA. El MVP está pensado para una sola PC, un único usuario, CUIT y punto de venta.
 
-`mod001` establece únicamente la base técnica: solución, aplicación WPF mínima, proyecto de tests, integración continua y documentación. Todavía no incluye persistencia, conexión con ARCA, generación de PDF ni una pantalla funcional de facturación.
+La base técnica incluye la solución, una aplicación WPF mínima, tests automatizados, integración continua y documentación. `mod002` agrega las reglas de dominio del comprobante: configuración fiscal validada, datos fijos y fechas del período de servicio. Todavía no incluye persistencia, conexión con ARCA, generación de PDF ni una pantalla funcional de facturación.
 
 ## Stack
 

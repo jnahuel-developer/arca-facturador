@@ -2,7 +2,14 @@
 
 ## Estado
 
-`mod001` no implementa autenticación ni emisión contra ARCA. Este documento es un punto de partida operativo para las ramas posteriores y no contiene credenciales reales.
+`mod002` incorpora el modelo local de configuración y las reglas fijas del comprobante, pero no implementa autenticación ni emisión contra ARCA. Este documento no contiene credenciales reales.
+
+## Configuración local implementada
+
+- Un único CUIT emisor, normalizado a 11 dígitos y validado mediante su dígito verificador.
+- Un único punto de venta, con valor permitido entre `1` y `99999`.
+
+La persistencia de estos valores se incorporará en `mod003`. Hasta entonces, el modelo existe únicamente en memoria.
 
 ## Configuración futura
 
@@ -23,4 +30,15 @@ Los certificados, claves privadas, tickets, CUIT y configuración local sensible
 
 ## Datos fijos del comprobante
 
-Las constantes funcionales y las reglas de fechas se formalizarán y probarán en `mod002`. La integración con ARCA deberá consumir esas mismas reglas para evitar diferencias entre la pantalla, el PDF y la solicitud fiscal.
+- Tipo: `Factura C`.
+- Receptor: `Consumidor final`.
+- Medio de pago: `Transferencia bancaria`.
+- Concepto: `Servicios`.
+- Código local: `0001`.
+- Descripción: `Honorarios por servicio`.
+- Cantidad: `1`.
+- Unidad local: `Otras unidades`.
+
+Para una fecha de emisión determinada, `FchServDesde` es el primer día del mismo mes, `FchServHasta` es el último día de ese mes y `FchVtoPago` coincide con la fecha de emisión.
+
+Estas reglas son independientes de la interfaz y deberán ser reutilizadas por la persistencia, el PDF y la integración con ARCA para evitar diferencias entre representaciones.
