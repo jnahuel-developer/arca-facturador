@@ -75,7 +75,7 @@ public class InvoiceFormViewModelTests
             Status: InvoiceStatus.Pending,
             Cae: null,
             CaeExpirationDate: null,
-            PdfPath: null);
+            PdfPath: @"C:\Facturas\factura-local-00000007.pdf");
 
         viewModel.AmountText = "125000";
         viewModel.TryPrepareInvoice(out _);
@@ -84,6 +84,7 @@ public class InvoiceFormViewModelTests
         Assert.Equal(string.Empty, viewModel.AmountText);
         Assert.Null(viewModel.AmountPreview);
         Assert.Contains("#7", viewModel.StatusMessage);
+        Assert.Contains("PDF local generado", viewModel.StatusMessage);
         Assert.False(viewModel.HasValidationMessage);
     }
 

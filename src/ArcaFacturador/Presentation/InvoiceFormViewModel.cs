@@ -305,7 +305,7 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
 
         ValidationMessage = null;
         StatusMessage = $"Emisión local #{invoice.Id} guardada por {FormatAmount(invoice.AmountCents)}. " +
-                        "Quedó pendiente de autorización en ARCA.";
+                        BuildPdfStatus(invoice);
         AmountPreview = null;
         _amountText = string.Empty;
         OnPropertyChanged(nameof(AmountText));
@@ -317,6 +317,12 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         ValidationMessage = "No se pudo guardar la emisión local. Revisá el acceso a la base de datos e intentá nuevamente.";
     }
 
+    public void ShowPdfError()
+    {
+        StatusMessage = null;
+        ValidationMessage = "La emisión local se guardó, pero no se pudo generar el PDF. Revisá permisos y espacio disponible.";
+    }
+
     private static DateOnly Today() => DateOnly.FromDateTime(DateTime.Today);
 
     private static string FormatDate(DateOnly date) =>
@@ -324,6 +330,16 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
 
     private static string FormatAmount(long amountInCents) =>
         (amountInCents / 100m).ToString("C2", ArgentineCulture);
+
+    private static string BuildPdfStatus(InvoiceRecord invoice)
+    {
+        if (string.IsNullOrWhiteSpace(invoice.PdfPath))
+        {
+            return "Quedó pendiente de autorización en ARCA.";
+        }
+
+        return $"PDF local generado en {invoice.PdfPath}. Quedó pendiente de autorización en ARCA.";
+    }
 
     private bool TryPrepareFrequentPrice(long id, out ProductRecord? product)
     {
