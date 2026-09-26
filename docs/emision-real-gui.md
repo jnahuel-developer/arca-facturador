@@ -1,0 +1,84 @@
+# Emisión real desde la GUI
+
+## Estado de la mod011
+
+`mod011` conecta la pantalla principal con el flujo real de ARCA. A partir de esta rama, la app puede:
+
+- probar conexión con ARCA sin emitir comprobantes;
+- guardar una factura pendiente local;
+- solicitar CAE mediante WSAA + WSFEv1;
+- persistir autorización, rechazo o estado pendiente de revisión;
+- regenerar el PDF local con CAE cuando ARCA autoriza;
+- mostrar mensajes accionables sin exponer token, sign ni secretos.
+
+## Acciones disponibles en la pantalla
+
+### Guardar borrador
+
+Guarda una factura local pendiente y genera PDF sin CAE. No envía información a ARCA.
+
+### Probar conexión ARCA
+
+Ejecuta una prueba no emisora:
+
+1. carga `appsettings.Local.json`;
+2. valida ambiente, CUIT, punto de venta y certificado;
+3. obtiene TA mediante WSAA;
+4. consulta `FECompUltimoAutorizado` en WSFEv1.
+
+Esta acción no emite comprobantes.
+
+### Emitir factura electrónica
+
+Ejecuta el flujo fiscal real:
+
+1. valida importe y datos fijos;
+2. carga configuración local;
+3. muestra una confirmación previa con ambiente, CUIT, punto de venta, comprobante e importe;
+4. guarda la factura local como pendiente;
+5. obtiene TA;
+6. consulta numeración;
+7. solicita CAE;
+8. persiste resultado;
+9. genera PDF con CAE si ARCA autoriza.
+
+En producción, la confirmación indica explícitamente que se emitirá una factura electrónica real.
+
+## Resultado de la operación
+
+La app distingue estos casos:
+
+- `Authorized`: ARCA autorizó y el PDF local quedó generado.
+- `Recovered`: la autorización se recuperó mediante reconciliación.
+- `AuthorizedWithPdfError`: ARCA autorizó, pero hubo un problema regenerando el PDF local.
+- `Rejected`: ARCA rechazó la solicitud; no hay CAE.
+- `PendingReview`: hubo un error recuperable o resultado incierto; no debe reintentarse a ciegas.
+
+## Checklist productivo mínimo
+
+Antes de la primera emisión real:
+
+1. Confirmar con el contador CUIT, punto de venta y condición fiscal.
+2. Confirmar que el punto de venta productivo esté habilitado para Web Services.
+3. Usar certificado productivo, no el de homologación.
+4. Completar `appsettings.Local.json` con `Environment = Produccion`.
+5. Confirmar que producción esté habilitada mediante:
+
+```json
+{
+  "AllowProduction": true,
+  "ProductionConfirmation": "CONFIRMO_USO_PRODUCCION"
+}
+```
+
+6. Ejecutar `Probar conexión ARCA`.
+7. Emitir una primera factura real controlada.
+8. Verificar el comprobante en ARCA.
+9. Confirmar que el PDF local contiene número, CAE y vencimiento de CAE.
+
+## Seguridad operativa
+
+- No se versionan certificados ni configuración real.
+- No se muestran `token` ni `sign` en pantalla.
+- Los errores recuperables piden revisar/reconciliar antes de reintentar.
+- La emisión real requiere confirmación visual previa.

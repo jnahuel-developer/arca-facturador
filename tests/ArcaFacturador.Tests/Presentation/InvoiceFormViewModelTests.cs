@@ -1,5 +1,8 @@
 using ArcaFacturador.Persistence.Models;
 using ArcaFacturador.Presentation;
+using ArcaFacturador.Arca;
+using ArcaFacturador.Arca.Wsfev1;
+using ArcaFacturador.Domain;
 
 namespace ArcaFacturador.Tests.Presentation;
 
@@ -86,6 +89,82 @@ public class InvoiceFormViewModelTests
         Assert.Contains("#7", viewModel.StatusMessage);
         Assert.Contains("PDF local generado", viewModel.StatusMessage);
         Assert.False(viewModel.HasValidationMessage);
+    }
+
+    [Fact]
+    public void BuildElectronicConfirmationMessage_WhenProduction_WarnsRealInvoice()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.AmountText = "1250";
+        viewModel.TryPrepareInvoice(out var invoice);
+        var preview = new ArcaOperationPreview(
+            ArcaEnvironmentName.Produccion,
+            new FiscalConfiguration("20111111112", 1),
+            "appsettings.Local.json");
+
+        var message = viewModel.BuildElectronicConfirmationMessage(invoice!, preview);
+
+        Assert.Contains("FACTURA ELECTRÓNICA REAL", message);
+        Assert.Contains("20111111112", message);
+        Assert.Contains("Punto de venta: 1", message);
+    }
+
+    [Fact]
+    public void MarkElectronicEmissionCompleted_WhenAuthorized_ClearsAmountAndShowsCae()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.AmountText = "1250";
+        var invoice = new InvoiceRecord(
+            Id: 3,
+            ReceiptNumber: 43,
+            IssueDate: new DateOnly(2026, 9, 25),
+            ServiceFrom: new DateOnly(2026, 9, 1),
+            ServiceTo: new DateOnly(2026, 9, 30),
+            PaymentDueDate: new DateOnly(2026, 9, 25),
+            AmountCents: 125_000,
+            Status: InvoiceStatus.Authorized,
+            Cae: "74370123456789",
+            CaeExpirationDate: new DateOnly(2026, 10, 5),
+            PdfPath: @"C:\Facturas\factura.pdf");
+        var result = new ArcaEmissionResult(
+            ArcaEmissionStatus.Authorized,
+            invoice,
+            new WsfeCaeResponse("A", "A", 43, invoice.Cae, invoice.CaeExpirationDate, [], []));
+
+        viewModel.MarkElectronicEmissionCompleted(result);
+
+        Assert.Equal(string.Empty, viewModel.AmountText);
+        Assert.Contains("autorizada", viewModel.StatusMessage);
+        Assert.Contains("74370123456789", viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public void MarkElectronicEmissionCompleted_WhenRejected_KeepsAmountAndShowsErrors()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.AmountText = "1250";
+        var invoice = new InvoiceRecord(
+            Id: 3,
+            ReceiptNumber: null,
+            IssueDate: new DateOnly(2026, 9, 25),
+            ServiceFrom: new DateOnly(2026, 9, 1),
+            ServiceTo: new DateOnly(2026, 9, 30),
+            PaymentDueDate: new DateOnly(2026, 9, 25),
+            AmountCents: 125_000,
+            Status: InvoiceStatus.Rejected,
+            Cae: null,
+            CaeExpirationDate: null,
+            PdfPath: null);
+        var result = new ArcaEmissionResult(
+            ArcaEmissionStatus.Rejected,
+            invoice,
+            new WsfeCaeResponse("R", "R", 43, null, null, [], [new WsfeMessage(10016, "Rechazado")]));
+
+        viewModel.MarkElectronicEmissionCompleted(result);
+
+        Assert.Equal("1250", viewModel.AmountText);
+        Assert.Contains("rechazó", viewModel.StatusMessage);
+        Assert.Contains("10016", viewModel.StatusMessage);
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
+using ArcaFacturador.Arca;
 using ArcaFacturador.Domain;
 using ArcaFacturador.Persistence.Models;
 
@@ -299,6 +300,26 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
                "Todavía no se enviará información a ARCA. ¿Querés continuar?";
     }
 
+    public string BuildElectronicConfirmationMessage(InvoiceRecord invoice, ArcaOperationPreview preview)
+    {
+        ArgumentNullException.ThrowIfNull(invoice);
+        ArgumentNullException.ThrowIfNull(preview);
+
+        var header = preview.IsProduction
+            ? "ATENCIÓN: se emitirá una FACTURA ELECTRÓNICA REAL ante ARCA."
+            : "Se emitirá un comprobante de prueba contra el ambiente de homologación de ARCA.";
+
+        return $"{header}\n\n" +
+               $"Ambiente: {preview.Environment}\n" +
+               $"CUIT emisor: {preview.FiscalConfiguration.Cuit}\n" +
+               $"Punto de venta: {preview.FiscalConfiguration.PointOfSale}\n" +
+               $"Comprobante: {ReceiptType}\n" +
+               $"Cliente: {CustomerType}\n" +
+               $"Importe: {FormatAmount(invoice.AmountCents)}\n" +
+               $"Período: {invoice.ServiceFrom:dd/MM/yyyy} al {invoice.ServiceTo:dd/MM/yyyy}\n\n" +
+               "Si ARCA autoriza la operación, se generará número de comprobante y CAE. ¿Querés continuar?";
+    }
+
     public void MarkAsSaved(InvoiceRecord invoice)
     {
         ArgumentNullException.ThrowIfNull(invoice);
@@ -309,6 +330,48 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         AmountPreview = null;
         _amountText = string.Empty;
         OnPropertyChanged(nameof(AmountText));
+    }
+
+    public void MarkConnectionTested(ArcaConnectionTestResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        ValidationMessage = null;
+        StatusMessage = $"Conexión ARCA OK en {result.Preview.Environment}. " +
+                        $"CUIT {result.Preview.FiscalConfiguration.Cuit}, " +
+                        $"PV {result.Preview.FiscalConfiguration.PointOfSale}, " +
+                        $"última Factura C autorizada: {result.LastAuthorizedReceiptNumber}.";
+    }
+
+    public void MarkElectronicEmissionCompleted(ArcaEmissionResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        ValidationMessage = null;
+        StatusMessage = result.Status switch
+        {
+            ArcaEmissionStatus.Authorized => BuildAuthorizedStatus("Factura electrónica autorizada.", result.Invoice),
+            ArcaEmissionStatus.Recovered => BuildAuthorizedStatus("Factura electrónica recuperada por reconciliación.", result.Invoice),
+            ArcaEmissionStatus.AuthorizedWithPdfError => BuildAuthorizedStatus("Factura electrónica autorizada, pero no se pudo regenerar el PDF local.", result.Invoice),
+            ArcaEmissionStatus.Rejected => BuildRejectedStatus(result),
+            ArcaEmissionStatus.PendingReview => BuildPendingReviewStatus(result.Invoice),
+            _ => "La operación finalizó con estado desconocido.",
+        };
+
+        if (result.IsAuthorized)
+        {
+            AmountPreview = null;
+            _amountText = string.Empty;
+            OnPropertyChanged(nameof(AmountText));
+        }
+    }
+
+    public void ShowArcaError(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        StatusMessage = null;
+        ValidationMessage = message;
     }
 
     public void ShowPersistenceError()
@@ -339,6 +402,34 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         }
 
         return $"PDF local generado en {invoice.PdfPath}. Quedó pendiente de autorización en ARCA.";
+    }
+
+    private static string BuildAuthorizedStatus(string prefix, InvoiceRecord invoice)
+    {
+        var pdfStatus = string.IsNullOrWhiteSpace(invoice.PdfPath)
+            ? "El PDF local quedó pendiente de revisar."
+            : $"PDF: {invoice.PdfPath}.";
+
+        return $"{prefix} Comprobante #{invoice.ReceiptNumber}, CAE {invoice.Cae}, " +
+               $"vencimiento CAE {invoice.CaeExpirationDate:dd/MM/yyyy}. {pdfStatus}";
+    }
+
+    private static string BuildRejectedStatus(ArcaEmissionResult result)
+    {
+        var details = result.Response?.Errors.Count > 0
+            ? string.Join(" ", result.Response.Errors.Select(error => $"{error.Code}: {error.Message}"))
+            : "ARCA no informó un detalle adicional.";
+
+        return $"ARCA rechazó la factura. No quedó autorizada. Detalle: {details}";
+    }
+
+    private static string BuildPendingReviewStatus(InvoiceRecord invoice)
+    {
+        var receiptText = invoice.ReceiptNumber is { } receiptNumber
+            ? $" con número tentativo {receiptNumber}"
+            : string.Empty;
+
+        return $"La operación quedó pendiente de revisión{receiptText}. No vuelvas a emitirla sin probar conexión y reconciliar.";
     }
 
     private bool TryPrepareFrequentPrice(long id, out ProductRecord? product)

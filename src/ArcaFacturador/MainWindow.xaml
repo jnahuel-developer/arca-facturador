@@ -50,7 +50,7 @@
                     <TextBlock Margin="0,6,0,0"
                                FontSize="14"
                                Foreground="#6B7280"
-                               Text="Emisión local simulada con catálogo simple de importes frecuentes." />
+                               Text="Emisión local y factura electrónica ARCA con catálogo simple de importes frecuentes." />
                 </StackPanel>
 
                 <Grid Grid.Row="1">
@@ -63,7 +63,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="Emisión local"
+                        <TextBlock Text="Emisión"
                                    FontSize="18"
                                    FontWeight="SemiBold"
                                    Margin="0,0,0,16" />
@@ -80,7 +80,17 @@
                             <Button Click="ValidateButton_Click"
                                     Content="Validar" />
                             <Button Click="SaveButton_Click"
-                                    Content="Guardar local" />
+                                    Content="Guardar borrador" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,12,0,0"
+                                    Orientation="Horizontal">
+                            <Button Click="TestArcaConnectionButton_Click"
+                                    MinWidth="150"
+                                    Content="Probar conexión ARCA" />
+                            <Button Click="EmitElectronicInvoiceButton_Click"
+                                    MinWidth="170"
+                                    Content="Emitir factura electrónica" />
                         </StackPanel>
 
                         <TextBlock Margin="0,22,0,0"
@@ -216,7 +226,7 @@
                            Margin="0,24,0,0"
                            FontSize="12"
                            Foreground="#6B7280"
-                           Text="El catálogo sólo guarda importes frecuentes para completar la factura local. No administra stock, productos reales ni listas comerciales."
+                           Text="El catálogo sólo guarda importes frecuentes. Antes de emitir electrónicamente, la app muestra una confirmación con ambiente, CUIT, punto de venta e importe. No administra stock, productos reales ni listas comerciales."
                            TextWrapping="Wrap" />
             </Grid>
         </Border>

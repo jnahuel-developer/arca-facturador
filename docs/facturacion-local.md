@@ -1,6 +1,6 @@
 # Facturación local simulada
 
-`mod004` incorpora la primera pantalla operativa del facturador. El flujo permite cargar un importe, revisar los datos fijos del comprobante, validar las fechas calculadas y guardar una emisión local.
+`mod004` incorpora la primera pantalla operativa del facturador. El flujo permite cargar un importe, revisar los datos fijos del comprobante, validar las fechas calculadas y guardar una emisión local. Desde `mod011`, la misma pantalla también puede probar conexión con ARCA y emitir la factura electrónica real cuando la configuración local está completa.
 
 ## Qué hace
 
@@ -21,11 +21,8 @@
 - Guarda un registro en SQLite con estado `Pending`.
 - Genera un PDF local con los datos disponibles y campos pendientes de autorización.
 
-## Qué no hace todavía
+## Emisión electrónica real
 
-- No invoca WSAA.
-- No invoca WSFEv1.
-- No solicita CAE.
-- No asigna número fiscal de comprobante.
+La acción `Emitir factura electrónica` invoca WSAA y WSFEv1, solicita CAE, guarda el resultado fiscal y regenera el PDF local con CAE si ARCA autoriza.
 
-Los registros guardados en esta etapa son una simulación local para preparar el flujo de trabajo. La emisión fiscal real se implementará en las ramas posteriores.
+La acción `Guardar borrador` se mantiene para guardar una factura local sin enviar información a ARCA.

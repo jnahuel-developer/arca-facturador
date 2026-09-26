@@ -45,11 +45,11 @@ El ejemplo versionado está en `appsettings.example.json`. El archivo real `apps
 https://wswhomo.afip.gov.ar/wsfev1/service.asmx
 ```
 
-## Límites de esta etapa
+## Evolución posterior
 
-- No se dispara automáticamente desde la pantalla principal.
-- No implementa reconciliación ante timeouts o respuestas inciertas; eso queda para `mod009`.
-- No prepara producción; eso queda para `mod010`.
+- `mod009` agrega reconciliación ante timeouts o respuestas inciertas.
+- `mod010` prepara producción y seguridad local.
+- `mod011` conecta la emisión real desde la pantalla principal.
 - No versiona certificados, claves ni tickets.
 
 La prueba manual real deberá hacerse en forma controlada una vez cargada la configuración local y confirmada la autorización del servicio en ARCA.

@@ -84,17 +84,25 @@ Cada rama `modxxx` nace desde `develop`, aborda un único hito, documenta su alc
 
 **Pruebas de integración:** selección inequívoca de ambiente, ausencia de secretos en repositorio y logs, validación de configuración incompleta y prueba controlada de conexión productiva sin emisión accidental; build y tests completos exitosos.
 
-## `mod011` — Instalación local y empaquetado
+## `mod011` — Conexión real desde GUI y primera prueba productiva
 
 **Origen:** `develop` luego de integrar `mod010`.
+
+**Alcance:** conectar la pantalla principal con el flujo real WSAA + WSFEv1, agregar prueba de conexión no emisora, emitir Factura C electrónica desde la GUI, mostrar confirmación fuerte en producción, persistir autorización/rechazo/pendiente, regenerar PDF con CAE y documentar el checklist de primera emisión real. No empaqueta todavía la aplicación.
+
+**Pruebas de integración:** tests de emisión autorizada, rechazo y error recuperable; prueba de conexión productiva sin emisión; primera emisión real controlada desde GUI; verificación posterior en ARCA; build y tests completos exitosos.
+
+## `mod012` — Instalación local y empaquetado
+
+**Origen:** `develop` luego de integrar `mod011`.
 
 **Alcance:** publicar la aplicación para Windows, crear un mecanismo simple de instalación o distribución, definir directorios de datos y PDF, acceso directo y procedimiento de respaldo y actualización en la PC objetivo.
 
 **Pruebas de integración:** instalación limpia, primer inicio, persistencia entre versiones, permisos de escritura, desinstalación sin pérdida accidental de datos y prueba en la PC objetivo; build y tests completos exitosos.
 
-## `mod012` — Cierre del MVP y pase a `main`
+## `mod013` — Cierre del MVP y pase a `main`
 
-**Origen:** `develop` luego de integrar `mod011`.
+**Origen:** `develop` luego de integrar `mod012`.
 
 **Alcance:** ejecutar pruebas de aceptación de punta a punta, corregir únicamente bloqueantes del MVP, completar manual operativo y checklist de recuperación, fijar versión y preparar el PR/MR de `develop` a `main`.
 
