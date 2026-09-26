@@ -113,6 +113,53 @@ public sealed class InvoiceRepository(SqliteDatabase database)
             ?? throw new InvalidOperationException("No se pudo recuperar la factura actualizada.");
     }
 
+    public InvoiceRecord UpdateAuthorizationResult(
+        long id,
+        long? receiptNumber,
+        InvoiceStatus status,
+        string? cae,
+        DateOnly? caeExpirationDate,
+        string? pdfPath)
+    {
+        if (id <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(id));
+        }
+
+        ValidateAuthorizationResult(receiptNumber, status, cae, caeExpirationDate);
+
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE invoices
+            SET
+                receipt_number = $receiptNumber,
+                status = $status,
+                cae = $cae,
+                cae_expiration_date = $caeExpirationDate,
+                pdf_path = $pdfPath
+            WHERE id = $id;
+            """;
+        command.Parameters.AddWithValue("$id", id);
+        command.Parameters.AddWithValue("$receiptNumber", (object?)receiptNumber ?? DBNull.Value);
+        command.Parameters.AddWithValue("$status", status.ToString());
+        command.Parameters.AddWithValue("$cae", (object?)cae ?? DBNull.Value);
+        command.Parameters.AddWithValue(
+            "$caeExpirationDate",
+            caeExpirationDate is { } date
+                ? FormatDate(date)
+                : DBNull.Value);
+        command.Parameters.AddWithValue("$pdfPath", (object?)pdfPath ?? DBNull.Value);
+
+        if (command.ExecuteNonQuery() == 0)
+        {
+            throw new InvalidOperationException("No se encontró la factura indicada.");
+        }
+
+        return GetById(id)
+            ?? throw new InvalidOperationException("No se pudo recuperar la factura actualizada.");
+    }
+
     public IReadOnlyList<InvoiceRecord> GetAll()
     {
         using var connection = database.OpenConnection();
@@ -202,6 +249,34 @@ public sealed class InvoiceRepository(SqliteDatabase database)
             throw new ArgumentOutOfRangeException(
                 nameof(invoice),
                 "El importe debe ser mayor que cero.");
+        }
+    }
+
+    private static void ValidateAuthorizationResult(
+        long? receiptNumber,
+        InvoiceStatus status,
+        string? cae,
+        DateOnly? caeExpirationDate)
+    {
+        if (receiptNumber is <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(receiptNumber),
+                "El número de comprobante debe ser mayor que cero cuando está informado.");
+        }
+
+        if (status == InvoiceStatus.Authorized)
+        {
+            if (!receiptNumber.HasValue)
+            {
+                throw new ArgumentException("Una factura autorizada debe tener número de comprobante.", nameof(receiptNumber));
+            }
+
+            ArgumentException.ThrowIfNullOrWhiteSpace(cae);
+            if (!caeExpirationDate.HasValue)
+            {
+                throw new ArgumentException("Una factura autorizada debe tener vencimiento de CAE.", nameof(caeExpirationDate));
+            }
         }
     }
 }

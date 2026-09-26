@@ -70,6 +70,45 @@ public class InvoiceRepositoryTests
         Assert.Equal(updatedInvoice, repository.GetById(storedInvoice.Id));
     }
 
+    [Fact]
+    public void UpdateAuthorizationResult_PersistsAuthorizedResult()
+    {
+        using var temporaryDatabase = new TemporaryDatabase();
+        var repository = new InvoiceRepository(temporaryDatabase.Database);
+        var storedInvoice = repository.Add(CreateInvoice(receiptNumber: null) with { Status = InvoiceStatus.Pending, Cae = null, CaeExpirationDate = null });
+
+        var updatedInvoice = repository.UpdateAuthorizationResult(
+            storedInvoice.Id,
+            receiptNumber: 43,
+            InvoiceStatus.Authorized,
+            cae: "74370123456789",
+            caeExpirationDate: new DateOnly(2026, 10, 5),
+            pdfPath: @"C:\Facturas\factura-local-00000001.pdf");
+
+        Assert.Equal(43, updatedInvoice.ReceiptNumber);
+        Assert.Equal(InvoiceStatus.Authorized, updatedInvoice.Status);
+        Assert.Equal("74370123456789", updatedInvoice.Cae);
+        Assert.Equal(new DateOnly(2026, 10, 5), updatedInvoice.CaeExpirationDate);
+        Assert.Equal(updatedInvoice, repository.GetById(storedInvoice.Id));
+    }
+
+    [Fact]
+    public void UpdateAuthorizationResult_RejectsAuthorizedResultWithoutCae()
+    {
+        using var temporaryDatabase = new TemporaryDatabase();
+        var repository = new InvoiceRepository(temporaryDatabase.Database);
+        var storedInvoice = repository.Add(CreateInvoice(receiptNumber: null) with { Status = InvoiceStatus.Pending, Cae = null, CaeExpirationDate = null });
+
+        Assert.Throws<ArgumentNullException>(
+            () => repository.UpdateAuthorizationResult(
+                storedInvoice.Id,
+                receiptNumber: 43,
+                InvoiceStatus.Authorized,
+                cae: null,
+                caeExpirationDate: new DateOnly(2026, 10, 5),
+                pdfPath: null));
+    }
+
     private static InvoiceRecord CreateInvoice(long? receiptNumber) => new(
         Id: 0,
         ReceiptNumber: receiptNumber,

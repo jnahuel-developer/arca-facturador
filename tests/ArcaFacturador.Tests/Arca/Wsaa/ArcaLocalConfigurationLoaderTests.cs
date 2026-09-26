@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ArcaFacturador.Arca.Wsaa;
+using ArcaFacturador.Arca.Wsfev1;
 
 namespace ArcaFacturador.Tests.Arca.Wsaa;
 
@@ -19,8 +20,10 @@ public class ArcaLocalConfigurationLoaderTests
                   "Arca": {
                     "Environment": "Homologacion",
                     "RepresentedCuit": "20111111112",
+                    "PointOfSale": 1,
                     "Service": "wsfe",
                     "LoginUrl": "https://wsaahomo.afip.gov.ar/ws/services/LoginCms",
+                    "WsfeUrl": "https://wswhomo.afip.gov.ar/wsfev1/service.asmx",
                     "TicketLifetimeHours": 12,
                     "Certificate": {
                       "PfxPath": "C:\\ARCA\\certificado.pfx",
@@ -32,11 +35,15 @@ public class ArcaLocalConfigurationLoaderTests
 
             var configuration = ArcaLocalConfigurationLoader.Load(filePath);
             var options = configuration.Arca.ToWsaaOptions();
+            var wsfeOptions = configuration.Arca.ToWsfev1Options();
+            var fiscalConfiguration = configuration.Arca.ToFiscalConfiguration();
 
             Assert.Equal("Homologacion", configuration.Arca.Environment);
             Assert.Equal("20111111112", options.RepresentedCuit);
             Assert.Equal("wsfe", options.Service);
             Assert.Equal(WsaaOptions.HomologationLoginUrl, options.LoginUrl);
+            Assert.Equal(1, fiscalConfiguration.PointOfSale);
+            Assert.Equal(Wsfev1Options.HomologationServiceUrl, wsfeOptions.ServiceUrl);
             Assert.Equal(TimeSpan.FromHours(12), options.TicketLifetime);
             Assert.Equal(@"C:\ARCA\certificado.pfx", configuration.Arca.Certificate.PfxPath);
             Assert.Equal("secret", configuration.Arca.Certificate.PfxPassword);
