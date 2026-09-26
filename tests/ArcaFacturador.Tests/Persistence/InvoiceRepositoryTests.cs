@@ -56,6 +56,20 @@ public class InvoiceRepositoryTests
         Assert.Throws<ArgumentException>(() => repository.Add(invoice));
     }
 
+    [Fact]
+    public void UpdatePdfPath_PersistsPdfPath()
+    {
+        using var temporaryDatabase = new TemporaryDatabase();
+        var repository = new InvoiceRepository(temporaryDatabase.Database);
+        var storedInvoice = repository.Add(CreateInvoice(receiptNumber: null) with { PdfPath = null });
+        var pdfPath = @"C:\Facturas\factura-local-00000001.pdf";
+
+        var updatedInvoice = repository.UpdatePdfPath(storedInvoice.Id, pdfPath);
+
+        Assert.Equal(pdfPath, updatedInvoice.PdfPath);
+        Assert.Equal(updatedInvoice, repository.GetById(storedInvoice.Id));
+    }
+
     private static InvoiceRecord CreateInvoice(long? receiptNumber) => new(
         Id: 0,
         ReceiptNumber: receiptNumber,

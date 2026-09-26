@@ -19,14 +19,13 @@
 - Valida que el importe sea numérico, mayor que cero y con hasta dos decimales.
 - Pide confirmación antes de guardar.
 - Guarda un registro en SQLite con estado `Pending`.
+- Genera un PDF local con los datos disponibles y campos pendientes de autorización.
 
 ## Qué no hace todavía
 
 - No invoca WSAA.
 - No invoca WSFEv1.
 - No solicita CAE.
-- No genera PDF.
 - No asigna número fiscal de comprobante.
-- No usa catálogo de precios frecuentes.
 
 Los registros guardados en esta etapa son una simulación local para preparar el flujo de trabajo. La emisión fiscal real se implementará en las ramas posteriores.

@@ -1,4 +1,6 @@
+using System.IO;
 using System.Windows;
+using ArcaFacturador.Documents;
 using ArcaFacturador.Persistence;
 using ArcaFacturador.Persistence.Repositories;
 using ArcaFacturador.Presentation;
@@ -11,6 +13,7 @@ public partial class MainWindow : Window
     private readonly InvoiceFormViewModel _viewModel;
     private readonly InvoiceRepository _invoiceRepository;
     private readonly ProductRepository _productRepository;
+    private readonly InvoicePdfGenerator _invoicePdfGenerator;
 
     public MainWindow()
     {
@@ -21,6 +24,7 @@ public partial class MainWindow : Window
         database.Initialize();
         _invoiceRepository = new InvoiceRepository(database);
         _productRepository = new ProductRepository(database);
+        _invoicePdfGenerator = new InvoicePdfGenerator();
         DataContext = _viewModel;
         ReloadFrequentPrices();
     }
@@ -51,7 +55,11 @@ public partial class MainWindow : Window
         try
         {
             var storedInvoice = _invoiceRepository.Add(invoice);
-            _viewModel.MarkAsSaved(storedInvoice);
+            var pdfPath = _invoicePdfGenerator.Generate(
+                storedInvoice,
+                LocalDataPaths.GetInvoicePdfFilePath(storedInvoice.Id));
+            var invoiceWithPdf = _invoiceRepository.UpdatePdfPath(storedInvoice.Id, pdfPath);
+            _viewModel.MarkAsSaved(invoiceWithPdf);
         }
         catch (InvalidOperationException)
         {
@@ -60,6 +68,14 @@ public partial class MainWindow : Window
         catch (SqliteException)
         {
             _viewModel.ShowPersistenceError();
+        }
+        catch (IOException)
+        {
+            _viewModel.ShowPdfError();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            _viewModel.ShowPdfError();
         }
     }
 

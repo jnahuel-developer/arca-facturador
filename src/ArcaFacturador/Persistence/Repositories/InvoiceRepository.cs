@@ -85,6 +85,34 @@ public sealed class InvoiceRepository(SqliteDatabase database)
         return reader.Read() ? ReadInvoice(reader) : null;
     }
 
+    public InvoiceRecord UpdatePdfPath(long id, string pdfPath)
+    {
+        if (id <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(id));
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(pdfPath);
+
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE invoices
+            SET pdf_path = $pdfPath
+            WHERE id = $id;
+            """;
+        command.Parameters.AddWithValue("$id", id);
+        command.Parameters.AddWithValue("$pdfPath", pdfPath);
+
+        if (command.ExecuteNonQuery() == 0)
+        {
+            throw new InvalidOperationException("No se encontró la factura indicada.");
+        }
+
+        return GetById(id)
+            ?? throw new InvalidOperationException("No se pudo recuperar la factura actualizada.");
+    }
+
     public IReadOnlyList<InvoiceRecord> GetAll()
     {
         using var connection = database.OpenConnection();
