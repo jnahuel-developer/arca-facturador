@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Xml.Linq;
+using ArcaFacturador.Arca;
 
 namespace ArcaFacturador.Arca.Wsaa;
 
@@ -25,7 +26,10 @@ public sealed class WsaaSoapClient(HttpClient httpClient)
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException($"WSAA devolvió HTTP {(int)response.StatusCode}: {ExtractFault(responseText)}");
+            var fault = ExtractFault(responseText);
+            throw new ArcaServiceException(
+                ArcaErrorClassifier.Classify(fault),
+                $"WSAA devolvió HTTP {(int)response.StatusCode}: {fault}");
         }
 
         return _parser.Parse(responseText);

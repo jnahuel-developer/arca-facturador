@@ -1,5 +1,7 @@
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
+using ArcaFacturador.Arca;
+using ArcaFacturador.Persistence;
 
 namespace ArcaFacturador.Arca.Wsaa;
 
@@ -11,14 +13,16 @@ public sealed class WsaaAuthenticator : IWsaaTicketProvider
     private readonly WsaaCmsSigner _signer;
     private readonly WsaaSoapClient _client;
     private readonly Func<DateTimeOffset> _clock;
+    private readonly IWsaaTicketCache? _ticketCache;
     private WsaaLoginTicket? _cachedTicket;
 
     public WsaaAuthenticator(
         WsaaOptions options,
         X509Certificate2 certificate,
         HttpClient httpClient,
+        IWsaaTicketCache? ticketCache = null,
         Func<DateTimeOffset>? clock = null)
-        : this(options, certificate, new WsaaLoginTicketRequestFactory(), new WsaaCmsSigner(), new WsaaSoapClient(httpClient), clock)
+        : this(options, certificate, new WsaaLoginTicketRequestFactory(), new WsaaCmsSigner(), new WsaaSoapClient(httpClient), ticketCache, clock)
     {
     }
 
@@ -28,6 +32,7 @@ public sealed class WsaaAuthenticator : IWsaaTicketProvider
         WsaaLoginTicketRequestFactory requestFactory,
         WsaaCmsSigner signer,
         WsaaSoapClient client,
+        IWsaaTicketCache? ticketCache = null,
         Func<DateTimeOffset>? clock = null)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -42,6 +47,7 @@ public sealed class WsaaAuthenticator : IWsaaTicketProvider
         _requestFactory = requestFactory;
         _signer = signer;
         _client = client;
+        _ticketCache = ticketCache ?? new FileWsaaTicketCache(LocalDataPaths.WsaaTicketCacheFilePath);
         _clock = clock ?? (() => DateTimeOffset.Now);
     }
 
@@ -53,9 +59,30 @@ public sealed class WsaaAuthenticator : IWsaaTicketProvider
             return _cachedTicket;
         }
 
+        _cachedTicket = _ticketCache?.Load(_options, now);
+        if (_cachedTicket?.IsValid(now, _options.RenewalMargin) == true)
+        {
+            return _cachedTicket;
+        }
+
         var loginTicketRequestXml = _requestFactory.Create(_options, now);
         var signedCms = _signer.Sign(loginTicketRequestXml, _certificate);
-        _cachedTicket = await _client.LoginCmsAsync(_options.LoginUrl, signedCms, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            _cachedTicket = await _client.LoginCmsAsync(_options.LoginUrl, signedCms, cancellationToken).ConfigureAwait(false);
+        }
+        catch (ArcaServiceException exception) when (exception.Kind == ArcaServiceErrorKind.ExistingValidTicket)
+        {
+            _cachedTicket = _ticketCache?.Load(_options, now);
+            if (_cachedTicket?.IsValid(now, _options.RenewalMargin) == true)
+            {
+                return _cachedTicket;
+            }
+
+            throw;
+        }
+
+        _ticketCache?.Save(_options, _cachedTicket);
         return _cachedTicket;
     }
 }

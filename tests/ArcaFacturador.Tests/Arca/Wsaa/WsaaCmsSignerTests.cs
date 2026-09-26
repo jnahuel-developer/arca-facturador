@@ -17,6 +17,7 @@ public class WsaaCmsSignerTests
         var cms = new SignedCms();
         cms.Decode(cmsBytes);
         Assert.NotEmpty(cms.SignerInfos);
+        Assert.NotEmpty(cms.ContentInfo.Content);
     }
 
     [Fact]

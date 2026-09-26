@@ -35,21 +35,106 @@ public sealed class WsfeInvoiceAuthorizationService(
 
         var ticket = await ticketProvider.GetTicketAsync(cancellationToken).ConfigureAwait(false);
         var auth = new WsfeAuth(ticket.Token, ticket.Sign, long.Parse(fiscalConfiguration.Cuit));
-        var lastAuthorized = await wsfeClient
-            .GetLastAuthorizedAsync(auth, fiscalConfiguration.PointOfSale, Wsfev1Constants.FacturaC, cancellationToken)
+        var receiptNumber = await ResolveReceiptNumberAsync(invoice, auth, fiscalConfiguration, cancellationToken).ConfigureAwait(false);
+
+        var reconciledInvoice = await TryRecoverAuthorizedInvoiceAsync(invoice, auth, fiscalConfiguration, receiptNumber, cancellationToken)
             .ConfigureAwait(false);
+        if (reconciledInvoice is not null)
+        {
+            return new WsfeAuthorizationOutcome(reconciledInvoice, CreateRecoveredResponse(reconciledInvoice));
+        }
 
         var request = _requestFactory.CreateFacturaCServices(
             invoice,
             fiscalConfiguration.PointOfSale,
-            lastAuthorized.ReceiptNumber + 1);
-        var response = await wsfeClient.RequestCaeAsync(auth, request, cancellationToken).ConfigureAwait(false);
+            receiptNumber);
+        var preparedInvoice = invoice.ReceiptNumber == receiptNumber
+            ? invoice
+            : invoiceRepository.UpdateAuthorizationResult(
+                invoice.Id,
+                receiptNumber,
+                InvoiceStatus.Pending,
+                cae: null,
+                caeExpirationDate: null,
+                pdfPath: invoice.PdfPath);
+
+        WsfeCaeResponse response;
+        try
+        {
+            response = await wsfeClient.RequestCaeAsync(auth, request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (ArcaServiceException exception) when (exception.IsRecoverable)
+        {
+            var recoveredInvoice = await TryRecoverAuthorizedInvoiceAsync(
+                    preparedInvoice,
+                    auth,
+                    fiscalConfiguration,
+                    receiptNumber,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            if (recoveredInvoice is not null)
+            {
+                return new WsfeAuthorizationOutcome(recoveredInvoice, CreateRecoveredResponse(recoveredInvoice));
+            }
+
+            throw;
+        }
 
         var updatedInvoice = response.IsAuthorized
-            ? AuthorizeInvoice(invoice, response)
-            : RejectInvoice(invoice);
+            ? AuthorizeInvoice(preparedInvoice, response)
+            : RejectInvoice(preparedInvoice);
 
         return new WsfeAuthorizationOutcome(updatedInvoice, response);
+    }
+
+    private async Task<long> ResolveReceiptNumberAsync(
+        InvoiceRecord invoice,
+        WsfeAuth auth,
+        FiscalConfiguration fiscalConfiguration,
+        CancellationToken cancellationToken)
+    {
+        if (invoice.ReceiptNumber is { } existingReceiptNumber)
+        {
+            return existingReceiptNumber;
+        }
+
+        var lastAuthorized = await wsfeClient
+            .GetLastAuthorizedAsync(auth, fiscalConfiguration.PointOfSale, Wsfev1Constants.FacturaC, cancellationToken)
+            .ConfigureAwait(false);
+        return lastAuthorized.ReceiptNumber + 1;
+    }
+
+    private async Task<InvoiceRecord?> TryRecoverAuthorizedInvoiceAsync(
+        InvoiceRecord invoice,
+        WsfeAuth auth,
+        FiscalConfiguration fiscalConfiguration,
+        long receiptNumber,
+        CancellationToken cancellationToken)
+    {
+        var voucher = await wsfeClient
+            .GetVoucherAsync(
+                auth,
+                fiscalConfiguration.PointOfSale,
+                Wsfev1Constants.FacturaC,
+                receiptNumber,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (voucher?.IsAuthorized != true)
+        {
+            return null;
+        }
+
+        var response = new WsfeCaeResponse(
+            HeaderResult: "A",
+            DetailResult: voucher.Result,
+            ReceiptNumber: voucher.ReceiptNumber,
+            Cae: voucher.Cae,
+            CaeExpirationDate: voucher.CaeExpirationDate,
+            Observations: [],
+            Errors: []);
+        return AuthorizeInvoice(invoice, response);
     }
 
     private InvoiceRecord AuthorizeInvoice(InvoiceRecord invoice, WsfeCaeResponse response)
@@ -75,5 +160,17 @@ public sealed class WsfeInvoiceAuthorizationService(
             cae: null,
             caeExpirationDate: null,
             pdfPath: invoice.PdfPath);
+    }
+
+    private static WsfeCaeResponse CreateRecoveredResponse(InvoiceRecord invoice)
+    {
+        return new WsfeCaeResponse(
+            HeaderResult: "A",
+            DetailResult: "A",
+            ReceiptNumber: invoice.ReceiptNumber ?? 0,
+            Cae: invoice.Cae,
+            CaeExpirationDate: invoice.CaeExpirationDate,
+            Observations: [new WsfeMessage(0, "Comprobante recuperado por reconciliación.")],
+            Errors: []);
     }
 }
