@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ArcaFacturador.Arca;
 using ArcaFacturador.Arca.Wsfev1;
 using ArcaFacturador.Domain;
 
@@ -13,7 +14,13 @@ public sealed record LocalConfigurationFile
 
 public sealed record ArcaLocalConfiguration
 {
+    public const string ProductionConfirmationText = "CONFIRMO_USO_PRODUCCION";
+
     public string Environment { get; init; } = "Homologacion";
+
+    public bool AllowProduction { get; init; }
+
+    public string? ProductionConfirmation { get; init; }
 
     public string? RepresentedCuit { get; init; }
 
@@ -31,10 +38,9 @@ public sealed record ArcaLocalConfiguration
 
     public WsaaOptions ToWsaaOptions()
     {
-        if (!Uri.TryCreate(LoginUrl, UriKind.Absolute, out var loginUrl))
-        {
-            throw new InvalidOperationException("La URL configurada para WSAA no es válida.");
-        }
+        Validate();
+        var profile = ArcaEnvironmentProfile.FromName(Environment);
+        var loginUrl = ResolveConfiguredUrl(LoginUrl, profile.WsaaLoginUrl, "WSAA");
 
         return new WsaaOptions
         {
@@ -47,10 +53,9 @@ public sealed record ArcaLocalConfiguration
 
     public Wsfev1Options ToWsfev1Options()
     {
-        if (!Uri.TryCreate(WsfeUrl, UriKind.Absolute, out var serviceUrl))
-        {
-            throw new InvalidOperationException("La URL configurada para WSFEv1 no es válida.");
-        }
+        Validate();
+        var profile = ArcaEnvironmentProfile.FromName(Environment);
+        var serviceUrl = ResolveConfiguredUrl(WsfeUrl, profile.Wsfev1ServiceUrl, "WSFEv1");
 
         return new Wsfev1Options
         {
@@ -60,12 +65,65 @@ public sealed record ArcaLocalConfiguration
 
     public FiscalConfiguration ToFiscalConfiguration()
     {
+        Validate();
+
         if (string.IsNullOrWhiteSpace(RepresentedCuit))
         {
             throw new InvalidOperationException("Configurá el CUIT representado para operar con ARCA.");
         }
 
         return new FiscalConfiguration(RepresentedCuit, PointOfSale);
+    }
+
+    public void Validate()
+    {
+        var profile = ArcaEnvironmentProfile.FromName(Environment);
+
+        ResolveConfiguredUrl(LoginUrl, profile.WsaaLoginUrl, "WSAA");
+        ResolveConfiguredUrl(WsfeUrl, profile.Wsfev1ServiceUrl, "WSFEv1");
+
+        if (TicketLifetimeHours <= 0)
+        {
+            throw new InvalidOperationException("La vigencia del ticket WSAA debe ser positiva.");
+        }
+
+        if (profile.Name == ArcaEnvironmentName.Produccion)
+        {
+            if (!AllowProduction || !string.Equals(ProductionConfirmation, ProductionConfirmationText, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Para usar producción configurá AllowProduction=true y ProductionConfirmation=\"{ProductionConfirmationText}\".");
+            }
+        }
+    }
+
+    private static Uri ResolveConfiguredUrl(string? configuredUrl, Uri expectedUrl, string serviceName)
+    {
+        if (string.IsNullOrWhiteSpace(configuredUrl))
+        {
+            return expectedUrl;
+        }
+
+        if (!Uri.TryCreate(configuredUrl, UriKind.Absolute, out var url))
+        {
+            throw new InvalidOperationException($"La URL configurada para {serviceName} no es válida.");
+        }
+
+        if (!UriEquals(url, expectedUrl))
+        {
+            throw new InvalidOperationException(
+                $"La URL configurada para {serviceName} no corresponde al ambiente seleccionado. Valor esperado: {expectedUrl}");
+        }
+
+        return url;
+    }
+
+    private static bool UriEquals(Uri left, Uri right)
+    {
+        var leftText = left.GetLeftPart(UriPartial.Path).TrimEnd('/');
+        var rightText = right.GetLeftPart(UriPartial.Path).TrimEnd('/');
+
+        return string.Equals(leftText, rightText, StringComparison.OrdinalIgnoreCase);
     }
 }
 

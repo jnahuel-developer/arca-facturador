@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ArcaFacturador.Arca;
 using ArcaFacturador.Arca.Wsaa;
 using ArcaFacturador.Arca.Wsfev1;
 
@@ -55,5 +56,54 @@ public class ArcaLocalConfigurationLoaderTests
                 Directory.Delete(directoryPath, recursive: true);
             }
         }
+    }
+
+    [Fact]
+    public void ToWsaaOptions_WhenProductionIsNotExplicitlyEnabled_Throws()
+    {
+        var configuration = new ArcaLocalConfiguration
+        {
+            Environment = ArcaEnvironmentName.Produccion,
+            LoginUrl = WsaaOptions.ProductionLoginUrl.ToString(),
+            WsfeUrl = Wsfev1Options.ProductionServiceUrl.ToString(),
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(configuration.ToWsaaOptions);
+
+        Assert.Contains("producción", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ToWsaaOptions_WhenProductionIsExplicitlyEnabled_UsesProductionUrl()
+    {
+        var configuration = new ArcaLocalConfiguration
+        {
+            Environment = ArcaEnvironmentName.Produccion,
+            AllowProduction = true,
+            ProductionConfirmation = ArcaLocalConfiguration.ProductionConfirmationText,
+            LoginUrl = WsaaOptions.ProductionLoginUrl.ToString(),
+            WsfeUrl = Wsfev1Options.ProductionServiceUrl.ToString(),
+        };
+
+        var options = configuration.ToWsaaOptions();
+        var wsfeOptions = configuration.ToWsfev1Options();
+
+        Assert.Equal(WsaaOptions.ProductionLoginUrl, options.LoginUrl);
+        Assert.Equal(Wsfev1Options.ProductionServiceUrl, wsfeOptions.ServiceUrl);
+    }
+
+    [Fact]
+    public void ToWsfev1Options_WhenUrlDoesNotMatchEnvironment_Throws()
+    {
+        var configuration = new ArcaLocalConfiguration
+        {
+            Environment = ArcaEnvironmentName.Homologacion,
+            LoginUrl = WsaaOptions.HomologationLoginUrl.ToString(),
+            WsfeUrl = Wsfev1Options.ProductionServiceUrl.ToString(),
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(configuration.ToWsfev1Options);
+
+        Assert.Contains("ambiente seleccionado", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 }
