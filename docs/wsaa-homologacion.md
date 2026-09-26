@@ -47,8 +47,10 @@ Ejemplo usando PFX:
   "Arca": {
     "Environment": "Homologacion",
     "RepresentedCuit": "20111111112",
+    "PointOfSale": 1,
     "Service": "wsfe",
     "LoginUrl": "https://wsaahomo.afip.gov.ar/ws/services/LoginCms",
+    "WsfeUrl": "https://wswhomo.afip.gov.ar/wsfev1/service.asmx",
     "TicketLifetimeHours": 12,
     "Certificate": {
       "PfxPath": "C:\\ARCA\\homologacion\\certificado-homologacion.pfx",
@@ -68,8 +70,10 @@ También se puede configurar con certificado y clave privada en formato PEM:
   "Arca": {
     "Environment": "Homologacion",
     "RepresentedCuit": "20111111112",
+    "PointOfSale": 1,
     "Service": "wsfe",
     "LoginUrl": "https://wsaahomo.afip.gov.ar/ws/services/LoginCms",
+    "WsfeUrl": "https://wswhomo.afip.gov.ar/wsfev1/service.asmx",
     "TicketLifetimeHours": 12,
     "Certificate": {
       "PfxPath": null,

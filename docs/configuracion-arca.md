@@ -2,7 +2,7 @@
 
 ## Estado
 
-`mod002` incorpora el modelo local de configuración y las reglas fijas del comprobante. `mod007` prepara la autenticación WSAA en homologación, pero todavía no emite comprobantes contra ARCA. Este documento no contiene credenciales reales.
+`mod002` incorpora el modelo local de configuración y las reglas fijas del comprobante. `mod007` prepara la autenticación WSAA en homologación. `mod008` prepara la emisión WSFEv1 de Factura C en homologación, pero la prueba real requiere completar datos locales y certificados. Este documento no contiene credenciales reales.
 
 ## Configuración local implementada
 
@@ -17,12 +17,13 @@ La integración requerirá, como mínimo:
 
 - CUIT emisor.
 - Punto de venta habilitado para Web Services.
+- Endpoint WSFEv1 de homologación o producción, según ambiente.
 - Certificado digital y clave privada protegida localmente.
 - Selección explícita de ambiente: homologación o producción.
 - Direcciones de los servicios WSAA y WSFEv1.
 - Manejo del Ticket de Acceso y su vencimiento.
 
-La autenticación comienza en homologación en `mod007` y la emisión se implementará en `mod008`. El pasaje a producción se preparará en `mod010`.
+La autenticación comienza en homologación en `mod007` y la emisión WSFEv1 se prepara en `mod008`. El pasaje a producción se preparará en `mod010`.
 
 ## Seguridad
 

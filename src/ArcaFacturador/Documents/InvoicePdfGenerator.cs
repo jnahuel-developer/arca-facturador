@@ -37,9 +37,9 @@ public sealed class InvoicePdfGenerator
         var lines = new[]
         {
             new PdfLine(22, "FACTURA C"),
-            new PdfLine(10, "Vista previa local - no autorizada por ARCA"),
+            new PdfLine(10, GetDocumentStatus(invoice)),
             new PdfLine(12, $"Comprobante local: {invoice.Id:00000000}"),
-            new PdfLine(12, "Numero fiscal: Pendiente"),
+            new PdfLine(12, $"Numero fiscal: {FormatOptionalReceiptNumber(invoice.ReceiptNumber)}"),
             new PdfLine(12, $"Fecha de emision: {FormatDate(invoice.IssueDate)}"),
             new PdfLine(12, $"Periodo de servicio: {FormatDate(invoice.ServiceFrom)} al {FormatDate(invoice.ServiceTo)}"),
             new PdfLine(12, $"Vencimiento de pago: {FormatDate(invoice.PaymentDueDate)}"),
@@ -53,9 +53,9 @@ public sealed class InvoicePdfGenerator
             new PdfLine(12, $"Cantidad: {InvoiceDefaults.Quantity:N0}"),
             new PdfLine(12, $"Unidad: {InvoiceDefaults.Unit}"),
             new PdfLine(14, $"Importe total: {FormatAmount(invoice.AmountCents)}"),
-            new PdfLine(12, "CAE: Pendiente de autorizacion"),
-            new PdfLine(12, "Vencimiento CAE: Pendiente"),
-            new PdfLine(10, "Este documento local no reemplaza la autorizacion fiscal de ARCA."),
+            new PdfLine(12, $"CAE: {FormatOptionalText(invoice.Cae, "Pendiente de autorizacion")}"),
+            new PdfLine(12, $"Vencimiento CAE: {FormatOptionalDate(invoice.CaeExpirationDate)}"),
+            new PdfLine(10, GetFooterStatus(invoice)),
         };
 
         var builder = new StringBuilder();
@@ -119,6 +119,25 @@ public sealed class InvoicePdfGenerator
 
     private static string FormatAmount(long amountCents) =>
         (amountCents / 100m).ToString("C2", ArgentineCulture);
+
+    private static string FormatOptionalReceiptNumber(long? receiptNumber) =>
+        receiptNumber.HasValue ? receiptNumber.Value.ToString("00000000", CultureInfo.InvariantCulture) : "Pendiente";
+
+    private static string FormatOptionalDate(DateOnly? date) =>
+        date.HasValue ? FormatDate(date.Value) : "Pendiente";
+
+    private static string FormatOptionalText(string? value, string fallback) =>
+        string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    private static string GetDocumentStatus(InvoiceRecord invoice) =>
+        invoice.Status == InvoiceStatus.Authorized
+            ? "Comprobante autorizado por ARCA"
+            : "Vista previa local - no autorizada por ARCA";
+
+    private static string GetFooterStatus(InvoiceRecord invoice) =>
+        invoice.Status == InvoiceStatus.Authorized
+            ? "Este documento contiene CAE informado por ARCA."
+            : "Este documento local no reemplaza la autorizacion fiscal de ARCA.";
 
     private static string Sanitize(string text)
     {

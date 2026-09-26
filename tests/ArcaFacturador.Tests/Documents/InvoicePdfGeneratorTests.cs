@@ -48,6 +48,40 @@ public class InvoicePdfGeneratorTests
         Assert.Throws<ArgumentOutOfRangeException>(() => generator.Generate(invoice, "factura.pdf"));
     }
 
+    [Fact]
+    public void Generate_IncludesCaeForAuthorizedInvoice()
+    {
+        var directoryPath = Path.Combine(Path.GetTempPath(), "ArcaFacturador.Tests", Guid.NewGuid().ToString("N"));
+        var pdfPath = Path.Combine(directoryPath, "factura-local-00000007.pdf");
+        var generator = new InvoicePdfGenerator();
+
+        try
+        {
+            generator.Generate(
+                CreateInvoice() with
+                {
+                    ReceiptNumber = 126,
+                    Status = InvoiceStatus.Authorized,
+                    Cae = "74370123456789",
+                    CaeExpirationDate = new DateOnly(2026, 10, 5),
+                },
+                pdfPath);
+            var pdfText = Encoding.ASCII.GetString(File.ReadAllBytes(pdfPath));
+
+            Assert.Contains("Comprobante autorizado por ARCA", pdfText);
+            Assert.Contains("Numero fiscal: 00000126", pdfText);
+            Assert.Contains("CAE: 74370123456789", pdfText);
+            Assert.Contains("Vencimiento CAE: 05/10/2026", pdfText);
+        }
+        finally
+        {
+            if (Directory.Exists(directoryPath))
+            {
+                Directory.Delete(directoryPath, recursive: true);
+            }
+        }
+    }
+
     private static InvoiceRecord CreateInvoice() => new(
         Id: 7,
         ReceiptNumber: null,

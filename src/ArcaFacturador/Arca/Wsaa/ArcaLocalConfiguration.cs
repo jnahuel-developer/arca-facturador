@@ -1,6 +1,8 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ArcaFacturador.Arca.Wsfev1;
+using ArcaFacturador.Domain;
 
 namespace ArcaFacturador.Arca.Wsaa;
 
@@ -15,9 +17,13 @@ public sealed record ArcaLocalConfiguration
 
     public string? RepresentedCuit { get; init; }
 
+    public int PointOfSale { get; init; } = 1;
+
     public string Service { get; init; } = WsaaOptions.DefaultService;
 
     public string LoginUrl { get; init; } = WsaaOptions.HomologationLoginUrl.ToString();
+
+    public string WsfeUrl { get; init; } = Wsfev1Options.HomologationServiceUrl.ToString();
 
     public int TicketLifetimeHours { get; init; } = 12;
 
@@ -37,6 +43,29 @@ public sealed record ArcaLocalConfiguration
             TicketLifetime = TimeSpan.FromHours(TicketLifetimeHours),
             RepresentedCuit = RepresentedCuit,
         };
+    }
+
+    public Wsfev1Options ToWsfev1Options()
+    {
+        if (!Uri.TryCreate(WsfeUrl, UriKind.Absolute, out var serviceUrl))
+        {
+            throw new InvalidOperationException("La URL configurada para WSFEv1 no es válida.");
+        }
+
+        return new Wsfev1Options
+        {
+            ServiceUrl = serviceUrl,
+        };
+    }
+
+    public FiscalConfiguration ToFiscalConfiguration()
+    {
+        if (string.IsNullOrWhiteSpace(RepresentedCuit))
+        {
+            throw new InvalidOperationException("Configurá el CUIT representado para operar con ARCA.");
+        }
+
+        return new FiscalConfiguration(RepresentedCuit, PointOfSale);
     }
 }
 

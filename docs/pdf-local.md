@@ -1,6 +1,6 @@
 # PDF local del comprobante
 
-`mod006` agrega la generación de un PDF local para cada emisión guardada desde la pantalla principal.
+`mod006` agrega la generación de un PDF local para cada emisión guardada desde la pantalla principal. `mod008` permite regenerarlo con número fiscal, CAE y vencimiento de CAE cuando ARCA autoriza el comprobante.
 
 ## Ubicación
 
@@ -35,6 +35,7 @@ El PDF incluye:
 - Unidad `Otras unidades`.
 - Importe total.
 - Campos reservados para CAE y vencimiento de CAE.
+- CAE y vencimiento de CAE cuando el comprobante fue autorizado.
 
 ## Límites de esta etapa
 
@@ -43,4 +44,4 @@ El PDF incluye:
 - El CAE y su vencimiento quedan pendientes hasta la autorización de ARCA.
 - Los datos sensibles de configuración fiscal no se versionan en Git.
 
-La rama `mod008` deberá completar o regenerar el PDF con la información devuelta por ARCA.
+La integración real con ARCA debe regenerar el PDF autorizado con la información devuelta por WSFEv1.

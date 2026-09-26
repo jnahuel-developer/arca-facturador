@@ -3,7 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace ArcaFacturador.Arca.Wsaa;
 
-public sealed class WsaaAuthenticator
+public sealed class WsaaAuthenticator : IWsaaTicketProvider
 {
     private readonly WsaaOptions _options;
     private readonly X509Certificate2 _certificate;
