@@ -6,7 +6,8 @@ namespace ArcaFacturador.Arca;
 public sealed record ArcaEmissionResult(
     ArcaEmissionStatus Status,
     InvoiceRecord Invoice,
-    WsfeCaeResponse? Response)
+    WsfeCaeResponse? Response,
+    string? DetailMessage = null)
 {
     public bool IsAuthorized =>
         Status is ArcaEmissionStatus.Authorized or ArcaEmissionStatus.AuthorizedWithPdfError or ArcaEmissionStatus.Recovered;

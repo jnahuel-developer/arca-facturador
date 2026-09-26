@@ -60,7 +60,9 @@ El `.gitignore` ya contempla estos casos.
 
 ## Configuración local sugerida
 
-Para producción, partir de:
+Para producción se puede usar directamente la sección `Configuración ARCA` de la pantalla principal.
+
+Como alternativa manual, partir de:
 
 ```text
 appsettings.production.example.json

@@ -56,7 +56,11 @@ public sealed class ArcaInvoiceEmissionService(
         catch (ArcaServiceException exception) when (exception.IsRecoverable)
         {
             var currentInvoice = invoiceRepository.GetById(storedInvoice.Id) ?? storedInvoice;
-            return new ArcaEmissionResult(ArcaEmissionStatus.PendingReview, currentInvoice, null);
+            return new ArcaEmissionResult(
+                ArcaEmissionStatus.PendingReview,
+                currentInvoice,
+                null,
+                ArcaUserMessageBuilder.FromException(exception));
         }
         catch (IOException)
         {

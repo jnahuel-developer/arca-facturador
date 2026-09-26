@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private readonly ProductRepository _productRepository;
     private readonly InvoicePdfGenerator _invoicePdfGenerator;
     private readonly ArcaInvoiceEmissionService _arcaEmissionService;
+    private readonly ArcaConfigurationStore _arcaConfigurationStore;
 
     public MainWindow()
     {
@@ -28,12 +29,14 @@ public partial class MainWindow : Window
         _invoiceRepository = new InvoiceRepository(database);
         _productRepository = new ProductRepository(database);
         _invoicePdfGenerator = new InvoicePdfGenerator();
+        _arcaConfigurationStore = new ArcaConfigurationStore();
         _arcaEmissionService = new ArcaInvoiceEmissionService(
             _invoiceRepository,
             _invoicePdfGenerator,
             new LocalArcaRuntimeFactory());
         DataContext = _viewModel;
         ReloadFrequentPrices();
+        LoadArcaConfiguration();
     }
 
     private void ValidateButton_Click(object sender, RoutedEventArgs e)
@@ -97,6 +100,24 @@ public partial class MainWindow : Window
         catch (Exception exception) when (IsUserFacingArcaException(exception))
         {
             _viewModel.ShowArcaError(ArcaUserMessageBuilder.FromException(exception));
+        }
+    }
+
+    private void SaveArcaConfigurationButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.TryPrepareArcaConfiguration(out var form) || form is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _arcaConfigurationStore.Save(form);
+            _viewModel.MarkArcaConfigurationSaved(form);
+        }
+        catch (Exception exception) when (IsUserFacingArcaException(exception))
+        {
+            _viewModel.ShowArcaConfigurationError(ArcaUserMessageBuilder.FromException(exception));
         }
     }
 
@@ -223,6 +244,18 @@ public partial class MainWindow : Window
     private void ReloadFrequentPrices(long? selectedProductId = null)
     {
         _viewModel.LoadFrequentPrices(_productRepository.GetAll(), selectedProductId);
+    }
+
+    private void LoadArcaConfiguration()
+    {
+        try
+        {
+            _viewModel.LoadArcaConfiguration(_arcaConfigurationStore.LoadForm());
+        }
+        catch (Exception exception) when (IsUserFacingArcaException(exception))
+        {
+            _viewModel.ShowArcaConfigurationError(ArcaUserMessageBuilder.FromException(exception));
+        }
     }
 
     private static bool IsUserFacingArcaException(Exception exception) =>

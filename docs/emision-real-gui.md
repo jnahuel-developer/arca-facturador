@@ -4,6 +4,8 @@
 
 `mod011` conecta la pantalla principal con el flujo real de ARCA. A partir de esta rama, la app puede:
 
+- editar y guardar la configuración ARCA desde la GUI;
+- alternar entre `Homologacion` y `Produccion`;
 - probar conexión con ARCA sin emitir comprobantes;
 - guardar una factura pendiente local;
 - solicitar CAE mediante WSAA + WSFEv1;
@@ -12,6 +14,19 @@
 - mostrar mensajes accionables sin exponer token, sign ni secretos.
 
 ## Acciones disponibles en la pantalla
+
+### Configuración ARCA
+
+La pantalla permite cargar:
+
+- ambiente: `Homologacion` o `Produccion`;
+- CUIT emisor;
+- punto de venta;
+- ruta del certificado PFX;
+- contraseña del PFX;
+- confirmación explícita de uso productivo.
+
+Al guardar, la app crea o actualiza `appsettings.Local.json`, que no se versiona. Si se elige producción, la app escribe automáticamente las URLs productivas oficiales y exige la confirmación explícita.
 
 ### Guardar borrador
 
@@ -43,6 +58,8 @@ Ejecuta el flujo fiscal real:
 9. genera PDF con CAE si ARCA autoriza.
 
 En producción, la confirmación indica explícitamente que se emitirá una factura electrónica real.
+
+Si la pantalla muestra `Homologacion`, no se emitirá una factura real aunque el flujo llegue a ARCA. Homologación sólo sirve para pruebas.
 
 ## Resultado de la operación
 

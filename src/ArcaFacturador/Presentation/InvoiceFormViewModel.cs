@@ -21,6 +21,14 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     private string? _catalogValidationMessage;
     private string? _catalogStatusMessage;
     private FrequentPriceItem? _selectedFrequentPrice;
+    private string _arcaEnvironment = ArcaEnvironmentName.Homologacion;
+    private string _arcaRepresentedCuit = string.Empty;
+    private string _arcaPointOfSaleText = "1";
+    private string _arcaPfxPath = string.Empty;
+    private string _arcaPfxPassword = string.Empty;
+    private bool _arcaAllowProduction;
+    private string? _arcaConfigurationValidationMessage;
+    private string? _arcaConfigurationStatusMessage;
 
     public InvoiceFormViewModel(Func<DateOnly>? todayProvider = null)
     {
@@ -34,6 +42,12 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<FrequentPriceItem> FrequentPrices { get; } = [];
+
+    public IReadOnlyList<string> ArcaEnvironments { get; } =
+    [
+        ArcaEnvironmentName.Homologacion,
+        ArcaEnvironmentName.Produccion,
+    ];
 
     public string ReceiptType => InvoiceDefaults.ReceiptType;
 
@@ -173,6 +187,94 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     }
 
     public bool HasCatalogStatusMessage => !string.IsNullOrEmpty(CatalogStatusMessage);
+
+    public string ArcaEnvironment
+    {
+        get => _arcaEnvironment;
+        set
+        {
+            if (SetField(ref _arcaEnvironment, value))
+            {
+                ClearArcaConfigurationMessages();
+                OnPropertyChanged(nameof(IsArcaProduction));
+            }
+        }
+    }
+
+    public bool IsArcaProduction =>
+        string.Equals(ArcaEnvironmentName.Normalize(ArcaEnvironment), ArcaEnvironmentName.Produccion, StringComparison.Ordinal);
+
+    public string ArcaRepresentedCuit
+    {
+        get => _arcaRepresentedCuit;
+        set
+        {
+            if (SetField(ref _arcaRepresentedCuit, value))
+            {
+                ClearArcaConfigurationMessages();
+            }
+        }
+    }
+
+    public string ArcaPointOfSaleText
+    {
+        get => _arcaPointOfSaleText;
+        set
+        {
+            if (SetField(ref _arcaPointOfSaleText, value))
+            {
+                ClearArcaConfigurationMessages();
+            }
+        }
+    }
+
+    public string ArcaPfxPath
+    {
+        get => _arcaPfxPath;
+        set
+        {
+            if (SetField(ref _arcaPfxPath, value))
+            {
+                ClearArcaConfigurationMessages();
+            }
+        }
+    }
+
+    public string ArcaPfxPassword
+    {
+        get => _arcaPfxPassword;
+        set
+        {
+            if (SetField(ref _arcaPfxPassword, value))
+            {
+                ClearArcaConfigurationMessages();
+            }
+        }
+    }
+
+    public bool ArcaAllowProduction
+    {
+        get => _arcaAllowProduction;
+        set
+        {
+            if (SetField(ref _arcaAllowProduction, value))
+            {
+                ClearArcaConfigurationMessages();
+            }
+        }
+    }
+
+    public string? ArcaConfigurationValidationMessage
+    {
+        get => _arcaConfigurationValidationMessage;
+        private set => SetField(ref _arcaConfigurationValidationMessage, value);
+    }
+
+    public string? ArcaConfigurationStatusMessage
+    {
+        get => _arcaConfigurationStatusMessage;
+        private set => SetField(ref _arcaConfigurationStatusMessage, value);
+    }
 
     public bool TryPrepareInvoice(out InvoiceRecord? invoice)
     {
@@ -354,7 +456,7 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
             ArcaEmissionStatus.Recovered => BuildAuthorizedStatus("Factura electrónica recuperada por reconciliación.", result.Invoice),
             ArcaEmissionStatus.AuthorizedWithPdfError => BuildAuthorizedStatus("Factura electrónica autorizada, pero no se pudo regenerar el PDF local.", result.Invoice),
             ArcaEmissionStatus.Rejected => BuildRejectedStatus(result),
-            ArcaEmissionStatus.PendingReview => BuildPendingReviewStatus(result.Invoice),
+            ArcaEmissionStatus.PendingReview => BuildPendingReviewStatus(result),
             _ => "La operación finalizó con estado desconocido.",
         };
 
@@ -364,6 +466,89 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
             _amountText = string.Empty;
             OnPropertyChanged(nameof(AmountText));
         }
+    }
+
+    public void LoadArcaConfiguration(ArcaConfigurationForm form)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+
+        _arcaEnvironment = form.Environment;
+        _arcaRepresentedCuit = form.RepresentedCuit;
+        _arcaPointOfSaleText = form.PointOfSale.ToString(CultureInfo.InvariantCulture);
+        _arcaPfxPath = form.PfxPath;
+        _arcaPfxPassword = form.PfxPassword;
+        _arcaAllowProduction = form.AllowProduction;
+        OnPropertyChanged(nameof(ArcaEnvironment));
+        OnPropertyChanged(nameof(IsArcaProduction));
+        OnPropertyChanged(nameof(ArcaRepresentedCuit));
+        OnPropertyChanged(nameof(ArcaPointOfSaleText));
+        OnPropertyChanged(nameof(ArcaPfxPath));
+        OnPropertyChanged(nameof(ArcaPfxPassword));
+        OnPropertyChanged(nameof(ArcaAllowProduction));
+    }
+
+    public bool TryPrepareArcaConfiguration(out ArcaConfigurationForm? form)
+    {
+        form = null;
+        ArcaConfigurationValidationMessage = null;
+        ArcaConfigurationStatusMessage = null;
+
+        var environment = ArcaEnvironmentName.Normalize(ArcaEnvironment);
+
+        if (string.IsNullOrWhiteSpace(ArcaRepresentedCuit))
+        {
+            ArcaConfigurationValidationMessage = "Ingresá el CUIT emisor.";
+            return false;
+        }
+
+        if (!int.TryParse(ArcaPointOfSaleText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var pointOfSale))
+        {
+            ArcaConfigurationValidationMessage = "Ingresá un punto de venta numérico.";
+            return false;
+        }
+
+        if (pointOfSale <= 0)
+        {
+            ArcaConfigurationValidationMessage = "El punto de venta debe ser mayor que cero.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(ArcaPfxPath))
+        {
+            ArcaConfigurationValidationMessage = "Ingresá la ruta del certificado PFX.";
+            return false;
+        }
+
+        if (environment == ArcaEnvironmentName.Produccion && !ArcaAllowProduction)
+        {
+            ArcaConfigurationValidationMessage = "Para producción marcá la confirmación explícita de uso productivo.";
+            return false;
+        }
+
+        form = new ArcaConfigurationForm(
+            environment,
+            ArcaRepresentedCuit,
+            pointOfSale,
+            ArcaPfxPath,
+            ArcaPfxPassword,
+            ArcaAllowProduction);
+        return true;
+    }
+
+    public void MarkArcaConfigurationSaved(ArcaConfigurationForm form)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+
+        ArcaConfigurationValidationMessage = null;
+        ArcaConfigurationStatusMessage = $"Configuración ARCA guardada. {form.BuildSummary()}";
+    }
+
+    public void ShowArcaConfigurationError(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        ArcaConfigurationStatusMessage = null;
+        ArcaConfigurationValidationMessage = message;
     }
 
     public void ShowArcaError(string message)
@@ -423,13 +608,17 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         return $"ARCA rechazó la factura. No quedó autorizada. Detalle: {details}";
     }
 
-    private static string BuildPendingReviewStatus(InvoiceRecord invoice)
+    private static string BuildPendingReviewStatus(ArcaEmissionResult result)
     {
+        var invoice = result.Invoice;
         var receiptText = invoice.ReceiptNumber is { } receiptNumber
             ? $" con número tentativo {receiptNumber}"
             : string.Empty;
+        var detail = string.IsNullOrWhiteSpace(result.DetailMessage)
+            ? string.Empty
+            : $" Detalle: {result.DetailMessage}";
 
-        return $"La operación quedó pendiente de revisión{receiptText}. No vuelvas a emitirla sin probar conexión y reconciliar.";
+        return $"La operación quedó pendiente de revisión{receiptText}.{detail} No vuelvas a emitirla sin probar conexión y reconciliar.";
     }
 
     private bool TryPrepareFrequentPrice(long id, out ProductRecord? product)
@@ -535,6 +724,12 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     {
         CatalogValidationMessage = null;
         CatalogStatusMessage = null;
+    }
+
+    private void ClearArcaConfigurationMessages()
+    {
+        ArcaConfigurationValidationMessage = null;
+        ArcaConfigurationStatusMessage = null;
     }
 
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

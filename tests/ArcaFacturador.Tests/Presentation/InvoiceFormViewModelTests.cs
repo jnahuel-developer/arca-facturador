@@ -215,6 +215,41 @@ public class InvoiceFormViewModelTests
         Assert.Equal("Seleccioná un importe frecuente para editar.", viewModel.CatalogValidationMessage);
     }
 
+    [Fact]
+    public void TryPrepareArcaConfiguration_WhenProductionRequiresExplicitConfirmation()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.ArcaEnvironment = ArcaEnvironmentName.Produccion;
+        viewModel.ArcaRepresentedCuit = "27354180753";
+        viewModel.ArcaPointOfSaleText = "1";
+        viewModel.ArcaPfxPath = @"C:\ARCA\produccion\certificado.pfx";
+
+        var result = viewModel.TryPrepareArcaConfiguration(out var form);
+
+        Assert.False(result);
+        Assert.Null(form);
+        Assert.Contains("producción", viewModel.ArcaConfigurationValidationMessage);
+    }
+
+    [Fact]
+    public void TryPrepareArcaConfiguration_WhenProductionConfirmed_ReturnsForm()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.ArcaEnvironment = ArcaEnvironmentName.Produccion;
+        viewModel.ArcaRepresentedCuit = "27354180753";
+        viewModel.ArcaPointOfSaleText = "1";
+        viewModel.ArcaPfxPath = @"C:\ARCA\produccion\certificado.pfx";
+        viewModel.ArcaPfxPassword = "secret";
+        viewModel.ArcaAllowProduction = true;
+
+        var result = viewModel.TryPrepareArcaConfiguration(out var form);
+
+        Assert.True(result);
+        Assert.NotNull(form);
+        Assert.Equal(ArcaEnvironmentName.Produccion, form.Environment);
+        Assert.True(form.AllowProduction);
+    }
+
     private static InvoiceFormViewModel CreateViewModel() =>
         new(() => new DateOnly(2026, 9, 25));
 }
