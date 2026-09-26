@@ -2,7 +2,7 @@
 
 ## Estado
 
-`mod002` incorpora el modelo local de configuración y las reglas fijas del comprobante, pero no implementa autenticación ni emisión contra ARCA. Este documento no contiene credenciales reales.
+`mod002` incorpora el modelo local de configuración y las reglas fijas del comprobante. `mod007` prepara la autenticación WSAA en homologación, pero todavía no emite comprobantes contra ARCA. Este documento no contiene credenciales reales.
 
 ## Configuración local implementada
 
@@ -22,7 +22,7 @@ La integración requerirá, como mínimo:
 - Direcciones de los servicios WSAA y WSFEv1.
 - Manejo del Ticket de Acceso y su vencimiento.
 
-La conexión comenzará en homologación en `mod007` y `mod008`. El pasaje a producción se preparará en `mod010`.
+La autenticación comienza en homologación en `mod007` y la emisión se implementará en `mod008`. El pasaje a producción se preparará en `mod010`.
 
 ## Seguridad
 
