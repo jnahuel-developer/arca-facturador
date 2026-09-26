@@ -37,6 +37,7 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
         ReloadFrequentPrices();
         LoadArcaConfiguration();
+        ArcaPfxPasswordBox.Password = _viewModel.ArcaPfxPassword;
     }
 
     private void ValidateButton_Click(object sender, RoutedEventArgs e)
@@ -119,6 +120,11 @@ public partial class MainWindow : Window
         {
             _viewModel.ShowArcaConfigurationError(ArcaUserMessageBuilder.FromException(exception));
         }
+    }
+
+    private void ArcaPfxPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        _viewModel.ArcaPfxPassword = ArcaPfxPasswordBox.Password;
     }
 
     private async void EmitElectronicInvoiceButton_Click(object sender, RoutedEventArgs e)

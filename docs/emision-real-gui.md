@@ -15,18 +15,36 @@
 
 ## Acciones disponibles en la pantalla
 
+La app abre maximizada y separa la operación en dos pestañas:
+
+- `Facturación`: carga de importes, borradores, prueba de conexión y emisión.
+- `Configuración ARCA`: ambiente, CUIT, punto de venta y certificado.
+
 ### Configuración ARCA
 
-La pantalla permite cargar:
+En la pestaña `Configuración ARCA` se cargan:
 
 - ambiente: `Homologacion` o `Produccion`;
 - CUIT emisor;
 - punto de venta;
 - ruta del certificado PFX;
-- contraseña del PFX;
+- contraseña del PFX, oculta en pantalla;
 - confirmación explícita de uso productivo.
 
 Al guardar, la app crea o actualiza `appsettings.Local.json`, que no se versiona. Si se elige producción, la app escribe automáticamente las URLs productivas oficiales y exige la confirmación explícita.
+
+## Uso paso a paso
+
+1. Abrir la pestaña `Configuración ARCA`.
+2. Elegir ambiente:
+   - `Homologacion` para pruebas.
+   - `Produccion` para facturas reales.
+3. Completar CUIT, punto de venta, ruta del PFX y contraseña.
+4. Si el ambiente es `Produccion`, marcar la confirmación productiva.
+5. Presionar `Guardar configuración`.
+6. Ir a la pestaña `Facturación`.
+7. Presionar `Probar conexión ARCA`.
+8. Si la conexión responde OK, cargar importe y presionar `Emitir factura electrónica`.
 
 ### Guardar borrador
 

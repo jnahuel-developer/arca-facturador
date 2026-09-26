@@ -3,10 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Facturador ARCA"
         Height="860"
-        Width="1120"
-        MinHeight="780"
-        MinWidth="980"
-        WindowStartupLocation="CenterScreen">
+        Width="1280"
+        MinHeight="760"
+        MinWidth="1100"
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized">
     <Window.Resources>
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="#1F2937" />
@@ -21,323 +22,355 @@
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Margin" Value="0,0,0,14" />
         </Style>
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
         <Style TargetType="Button">
             <Setter Property="Padding" Value="14,8" />
             <Setter Property="Margin" Value="0,0,8,0" />
             <Setter Property="MinWidth" Value="112" />
         </Style>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#E5E7EB" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="20" />
+        </Style>
     </Window.Resources>
 
     <Grid Background="#F5F7FA">
-        <Border Margin="28"
-                Padding="28"
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Margin="24,20,24,12"
+                Padding="24"
                 Background="White"
                 BorderBrush="#E5E7EB"
                 BorderThickness="1"
                 CornerRadius="6">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
-                <StackPanel Grid.Row="0"
-                            Margin="0,0,0,24">
-                    <TextBlock Text="Facturador ARCA"
-                               FontSize="28"
-                               FontWeight="SemiBold" />
-                    <TextBlock Margin="0,6,0,0"
-                               FontSize="14"
-                               Foreground="#6B7280"
-                               Text="Emisión local y factura electrónica ARCA con catálogo simple de importes frecuentes." />
-                </StackPanel>
-
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1.1*" />
-                        <ColumnDefinition Width="24" />
-                        <ColumnDefinition Width="1.45*" />
-                        <ColumnDefinition Width="24" />
-                        <ColumnDefinition Width="1.15*" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="Emisión"
-                                   FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Margin="0,0,0,16" />
-
-                        <TextBlock Style="{StaticResource LabelText}"
-                                   Text="Importe" />
-                        <TextBox Height="36"
-                                 Padding="10,7"
-                                 FontSize="15"
-                                 Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" />
-
-                        <StackPanel Margin="0,18,0,0"
-                                    Orientation="Horizontal">
-                            <Button Click="ValidateButton_Click"
-                                    Content="Validar" />
-                            <Button Click="SaveButton_Click"
-                                    Content="Guardar borrador" />
-                        </StackPanel>
-
-                        <StackPanel Margin="0,12,0,0"
-                                    Orientation="Horizontal">
-                            <Button Click="TestArcaConnectionButton_Click"
-                                    MinWidth="150"
-                                    Content="Probar conexión ARCA" />
-                            <Button Click="EmitElectronicInvoiceButton_Click"
-                                    MinWidth="170"
-                                    Content="Emitir factura electrónica" />
-                        </StackPanel>
-
-                        <TextBlock Margin="0,22,0,0"
-                                   FontSize="13"
-                                   Foreground="#B91C1C"
-                                   Text="{Binding ValidationMessage}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Margin="0,8,0,0"
-                                   FontSize="13"
-                                   Foreground="#047857"
-                                   Text="{Binding StatusMessage}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-
-                    <Grid Grid.Column="2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="Datos fijos"
-                                       FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,16" />
-
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Comprobante" />
-                            <TextBlock Style="{StaticResource ValueText}"
-                                       Text="{Binding ReceiptType}" />
-
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Cliente" />
-                            <TextBlock Style="{StaticResource ValueText}"
-                                       Text="{Binding CustomerType}" />
-
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Medio de pago" />
-                            <TextBlock Style="{StaticResource ValueText}"
-                                       Text="{Binding PaymentMethod}" />
-
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Concepto" />
-                            <TextBlock Style="{StaticResource ValueText}"
-                                       Text="{Binding Concept}" />
-
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Importe validado" />
-                            <TextBlock Style="{StaticResource ValueText}"
-                                       Text="{Binding AmountPreview, TargetNullValue=Pendiente}" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="1">
-                            <TextBlock Text="Fechas"
-                                       FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,16" />
-
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Producto local" />
-                            <TextBlock Style="{StaticResource ValueText}"
-                                       Text="{Binding ProductSummary}" />
-
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Cantidad" />
-                            <TextBlock Style="{StaticResource ValueText}"
-                                       Text="{Binding QuantitySummary}" />
-
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Fecha de emisión" />
-                            <TextBlock Style="{StaticResource ValueText}"
-                                       Text="{Binding IssueDateText}" />
-
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Servicio desde" />
-                            <TextBlock Style="{StaticResource ValueText}"
-                                       Text="{Binding ServiceFromText}" />
-
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Servicio hasta" />
-                            <TextBlock Style="{StaticResource ValueText}"
-                                       Text="{Binding ServiceToText}" />
-
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Vencimiento de pago" />
-                            <TextBlock Style="{StaticResource ValueText}"
-                                       Text="{Binding PaymentDueDateText}" />
-                        </StackPanel>
-                    </Grid>
-
-                    <StackPanel Grid.Column="4">
-                        <TextBlock Text="Importes frecuentes"
-                                   FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Margin="0,0,0,16" />
-
-                        <ListBox Height="210"
-                                 ItemsSource="{Binding FrequentPrices}"
-                                 SelectedItem="{Binding SelectedFrequentPrice, Mode=TwoWay}"
-                                 DisplayMemberPath="DisplayText" />
-
-                        <TextBlock Margin="0,18,0,0"
-                                   Style="{StaticResource LabelText}"
-                                   Text="Importe frecuente" />
-                        <TextBox Height="36"
-                                 Padding="10,7"
-                                 FontSize="15"
-                                 Text="{Binding FrequentPriceAmountText, UpdateSourceTrigger=PropertyChanged}" />
-
-                        <WrapPanel Margin="0,18,0,0">
-                            <Button Click="AddFrequentPriceButton_Click"
-                                    Content="Agregar" />
-                            <Button Click="UpdateFrequentPriceButton_Click"
-                                    Content="Actualizar" />
-                            <Button Click="DeleteFrequentPriceButton_Click"
-                                    Content="Eliminar" />
-                        </WrapPanel>
-
-                        <TextBlock Margin="0,18,0,0"
-                                   FontSize="13"
-                                   Foreground="#B91C1C"
-                                   Text="{Binding CatalogValidationMessage}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Margin="0,8,0,0"
-                                   FontSize="13"
-                                   Foreground="#047857"
-                                   Text="{Binding CatalogStatusMessage}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                </Grid>
-
-                <Border Grid.Row="2"
-                        Margin="0,24,0,0"
-                        Padding="16"
-                        Background="#F9FAFB"
-                        BorderBrush="#E5E7EB"
-                        BorderThickness="1"
-                        CornerRadius="4">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1.1*" />
-                            <ColumnDefinition Width="16" />
-                            <ColumnDefinition Width="1.1*" />
-                            <ColumnDefinition Width="16" />
-                            <ColumnDefinition Width="1.5*" />
-                            <ColumnDefinition Width="16" />
-                            <ColumnDefinition Width="1.3*" />
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Row="0"
-                                   Grid.ColumnSpan="7"
-                                   Text="Configuración ARCA"
-                                   FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Margin="0,0,0,12" />
-
-                        <StackPanel Grid.Row="1"
-                                    Grid.Column="0">
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Ambiente" />
-                            <ComboBox Height="34"
-                                      ItemsSource="{Binding ArcaEnvironments}"
-                                      SelectedItem="{Binding ArcaEnvironment, Mode=TwoWay}" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="1"
-                                    Grid.Column="2">
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="CUIT emisor" />
-                            <TextBox Height="34"
-                                     Padding="8,6"
-                                     Text="{Binding ArcaRepresentedCuit, UpdateSourceTrigger=PropertyChanged}" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="1"
-                                    Grid.Column="4">
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Ruta certificado PFX" />
-                            <TextBox Height="34"
-                                     Padding="8,6"
-                                     Text="{Binding ArcaPfxPath, UpdateSourceTrigger=PropertyChanged}" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="1"
-                                    Grid.Column="6">
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Contraseña PFX" />
-                            <TextBox Height="34"
-                                     Padding="8,6"
-                                     Text="{Binding ArcaPfxPassword, UpdateSourceTrigger=PropertyChanged}" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="2"
-                                    Grid.Column="0"
-                                    Margin="0,12,0,0">
-                            <TextBlock Style="{StaticResource LabelText}"
-                                       Text="Punto de venta" />
-                            <TextBox Height="34"
-                                     Padding="8,6"
-                                     Text="{Binding ArcaPointOfSaleText, UpdateSourceTrigger=PropertyChanged}" />
-                        </StackPanel>
-
-                        <CheckBox Grid.Row="2"
-                                  Grid.Column="2"
-                                  Grid.ColumnSpan="3"
-                                  Margin="0,36,0,0"
-                                  IsChecked="{Binding ArcaAllowProduction, Mode=TwoWay}"
-                                  Content="Confirmo que esta configuración puede operar en producción" />
-
-                        <StackPanel Grid.Row="2"
-                                    Grid.Column="6"
-                                    Margin="0,26,0,0">
-                            <Button Click="SaveArcaConfigurationButton_Click"
-                                    Content="Guardar configuración" />
-                        </StackPanel>
-
-                        <TextBlock Grid.Row="3"
-                                   Grid.ColumnSpan="7"
-                                   Margin="0,12,0,0"
-                                   FontSize="13"
-                                   Foreground="#B91C1C"
-                                   Text="{Binding ArcaConfigurationValidationMessage}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Grid.Row="3"
-                                   Grid.ColumnSpan="7"
-                                   Margin="0,30,0,0"
-                                   FontSize="13"
-                                   Foreground="#047857"
-                                   Text="{Binding ArcaConfigurationStatusMessage}"
-                                   TextWrapping="Wrap" />
-                    </Grid>
-                </Border>
-
-                <TextBlock Grid.Row="3"
-                           Margin="0,24,0,0"
-                           FontSize="12"
+            <StackPanel>
+                <TextBlock Text="Facturador ARCA"
+                           FontSize="28"
+                           FontWeight="SemiBold" />
+                <TextBlock Margin="0,6,0,0"
+                           FontSize="14"
                            Foreground="#6B7280"
-                           Text="El catálogo sólo guarda importes frecuentes. Antes de emitir electrónicamente, la app muestra una confirmación con ambiente, CUIT, punto de venta e importe. No administra stock, productos reales ni listas comerciales."
-                           TextWrapping="Wrap" />
-            </Grid>
+                           Text="Facturación electrónica real, borradores locales y configuración ARCA en una sola app." />
+            </StackPanel>
         </Border>
+
+        <TabControl Grid.Row="1"
+                    Margin="24,0,24,12"
+                    Background="Transparent">
+            <TabItem Header="Facturación">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.05*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="1.45*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="1.1*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0"
+                                Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Emisión"
+                                           Style="{StaticResource SectionTitle}" />
+
+                                <TextBlock Style="{StaticResource LabelText}"
+                                           Text="Importe" />
+                                <TextBox Height="38"
+                                         Padding="10,7"
+                                         FontSize="15"
+                                         Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <WrapPanel Margin="0,18,0,0">
+                                    <Button Click="ValidateButton_Click"
+                                            Content="Validar" />
+                                    <Button Click="SaveButton_Click"
+                                            Content="Guardar borrador" />
+                                </WrapPanel>
+
+                                <Separator Margin="0,18,0,18" />
+
+                                <TextBlock Text="Operaciones con ARCA"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,8" />
+                                <TextBlock Text="Primero probá conexión. Emitir factura electrónica puede generar un comprobante fiscal real si el ambiente es Producción."
+                                           FontSize="12"
+                                           Foreground="#6B7280"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,12" />
+
+                                <WrapPanel>
+                                    <Button Click="TestArcaConnectionButton_Click"
+                                            MinWidth="160"
+                                            Content="Probar conexión ARCA" />
+                                    <Button Click="EmitElectronicInvoiceButton_Click"
+                                            MinWidth="190"
+                                            Content="Emitir factura electrónica" />
+                                </WrapPanel>
+
+                                <TextBlock Margin="0,22,0,0"
+                                           FontSize="13"
+                                           Foreground="#B91C1C"
+                                           Text="{Binding ValidationMessage}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="0,8,0,0"
+                                           FontSize="13"
+                                           Foreground="#047857"
+                                           Text="{Binding StatusMessage}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="2"
+                                Style="{StaticResource Card}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="24" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Datos fijos"
+                                               Style="{StaticResource SectionTitle}" />
+
+                                    <TextBlock Style="{StaticResource LabelText}"
+                                               Text="Comprobante" />
+                                    <TextBlock Style="{StaticResource ValueText}"
+                                               Text="{Binding ReceiptType}" />
+
+                                    <TextBlock Style="{StaticResource LabelText}"
+                                               Text="Cliente" />
+                                    <TextBlock Style="{StaticResource ValueText}"
+                                               Text="{Binding CustomerType}" />
+
+                                    <TextBlock Style="{StaticResource LabelText}"
+                                               Text="Medio de pago" />
+                                    <TextBlock Style="{StaticResource ValueText}"
+                                               Text="{Binding PaymentMethod}" />
+
+                                    <TextBlock Style="{StaticResource LabelText}"
+                                               Text="Concepto" />
+                                    <TextBlock Style="{StaticResource ValueText}"
+                                               Text="{Binding Concept}" />
+
+                                    <TextBlock Style="{StaticResource LabelText}"
+                                               Text="Importe validado" />
+                                    <TextBlock Style="{StaticResource ValueText}"
+                                               Text="{Binding AmountPreview, TargetNullValue=Pendiente}" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Fechas"
+                                               Style="{StaticResource SectionTitle}" />
+
+                                    <TextBlock Style="{StaticResource LabelText}"
+                                               Text="Producto local" />
+                                    <TextBlock Style="{StaticResource ValueText}"
+                                               Text="{Binding ProductSummary}" />
+
+                                    <TextBlock Style="{StaticResource LabelText}"
+                                               Text="Cantidad" />
+                                    <TextBlock Style="{StaticResource ValueText}"
+                                               Text="{Binding QuantitySummary}" />
+
+                                    <TextBlock Style="{StaticResource LabelText}"
+                                               Text="Fecha de emisión" />
+                                    <TextBlock Style="{StaticResource ValueText}"
+                                               Text="{Binding IssueDateText}" />
+
+                                    <TextBlock Style="{StaticResource LabelText}"
+                                               Text="Servicio desde" />
+                                    <TextBlock Style="{StaticResource ValueText}"
+                                               Text="{Binding ServiceFromText}" />
+
+                                    <TextBlock Style="{StaticResource LabelText}"
+                                               Text="Servicio hasta" />
+                                    <TextBlock Style="{StaticResource ValueText}"
+                                               Text="{Binding ServiceToText}" />
+
+                                    <TextBlock Style="{StaticResource LabelText}"
+                                               Text="Vencimiento de pago" />
+                                    <TextBlock Style="{StaticResource ValueText}"
+                                               Text="{Binding PaymentDueDateText}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="4"
+                                Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Importes frecuentes"
+                                           Style="{StaticResource SectionTitle}" />
+
+                                <ListBox Height="260"
+                                         ItemsSource="{Binding FrequentPrices}"
+                                         SelectedItem="{Binding SelectedFrequentPrice, Mode=TwoWay}"
+                                         DisplayMemberPath="DisplayText" />
+
+                                <TextBlock Margin="0,18,0,0"
+                                           Style="{StaticResource LabelText}"
+                                           Text="Importe frecuente" />
+                                <TextBox Height="38"
+                                         Padding="10,7"
+                                         FontSize="15"
+                                         Text="{Binding FrequentPriceAmountText, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <WrapPanel Margin="0,18,0,0">
+                                    <Button Click="AddFrequentPriceButton_Click"
+                                            Content="Agregar" />
+                                    <Button Click="UpdateFrequentPriceButton_Click"
+                                            Content="Actualizar" />
+                                    <Button Click="DeleteFrequentPriceButton_Click"
+                                            Content="Eliminar" />
+                                </WrapPanel>
+
+                                <TextBlock Margin="0,18,0,0"
+                                           FontSize="13"
+                                           Foreground="#B91C1C"
+                                           Text="{Binding CatalogValidationMessage}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="0,8,0,0"
+                                           FontSize="13"
+                                           Foreground="#047857"
+                                           Text="{Binding CatalogStatusMessage}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Configuración ARCA">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Border Margin="0,16,0,0"
+                            Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1*" />
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="1*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Row="0"
+                                        Grid.ColumnSpan="3"
+                                        Margin="0,0,0,24">
+                                <TextBlock Text="Configuración ARCA"
+                                           FontSize="22"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Margin="0,6,0,0"
+                                           FontSize="13"
+                                           Foreground="#6B7280"
+                                           TextWrapping="Wrap"
+                                           Text="Estos datos quedan guardados localmente en appsettings.Local.json y no se suben a Git. Para emitir una factura real, el ambiente debe ser Producción y el certificado debe ser productivo." />
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="1"
+                                        Grid.Column="0">
+                                <TextBlock Style="{StaticResource LabelText}"
+                                           Text="Ambiente" />
+                                <ComboBox Height="38"
+                                          ItemsSource="{Binding ArcaEnvironments}"
+                                          SelectedItem="{Binding ArcaEnvironment, Mode=TwoWay}" />
+
+                                <TextBlock Margin="0,18,0,0"
+                                           Style="{StaticResource LabelText}"
+                                           Text="CUIT emisor" />
+                                <TextBox Height="38"
+                                         Padding="10,7"
+                                         Text="{Binding ArcaRepresentedCuit, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <TextBlock Margin="0,18,0,0"
+                                           Style="{StaticResource LabelText}"
+                                           Text="Punto de venta" />
+                                <TextBox Height="38"
+                                         Padding="10,7"
+                                         Text="{Binding ArcaPointOfSaleText, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="1"
+                                        Grid.Column="2">
+                                <TextBlock Style="{StaticResource LabelText}"
+                                           Text="Ruta certificado PFX" />
+                                <TextBox Height="38"
+                                         Padding="10,7"
+                                         Text="{Binding ArcaPfxPath, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <TextBlock Margin="0,18,0,0"
+                                           Style="{StaticResource LabelText}"
+                                           Text="Contraseña PFX" />
+                                <PasswordBox x:Name="ArcaPfxPasswordBox"
+                                             Height="38"
+                                             Padding="10,7"
+                                             PasswordChanged="ArcaPfxPasswordBox_PasswordChanged" />
+
+                                <CheckBox Margin="0,22,0,0"
+                                          IsChecked="{Binding ArcaAllowProduction, Mode=TwoWay}"
+                                          Content="Confirmo que esta configuración puede operar en producción" />
+                            </StackPanel>
+
+                            <Border Grid.Row="2"
+                                    Grid.ColumnSpan="3"
+                                    Margin="0,24,0,0"
+                                    Padding="14"
+                                    Background="#FFF7ED"
+                                    BorderBrush="#FDBA74"
+                                    BorderThickness="1"
+                                    CornerRadius="4">
+                                <TextBlock TextWrapping="Wrap"
+                                           Foreground="#9A3412"
+                                           Text="Importante: Homologación sólo sirve para pruebas y nunca genera facturas reales. Producción puede emitir comprobantes fiscales reales; por eso exige confirmación explícita." />
+                            </Border>
+
+                            <StackPanel Grid.Row="3"
+                                        Grid.ColumnSpan="3"
+                                        Margin="0,24,0,0">
+                                <WrapPanel>
+                                    <Button Click="SaveArcaConfigurationButton_Click"
+                                            MinWidth="180"
+                                            Content="Guardar configuración" />
+                                </WrapPanel>
+
+                                <TextBlock Margin="0,16,0,0"
+                                           FontSize="13"
+                                           Foreground="#B91C1C"
+                                           Text="{Binding ArcaConfigurationValidationMessage}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="0,8,0,0"
+                                           FontSize="13"
+                                           Foreground="#047857"
+                                           Text="{Binding ArcaConfigurationStatusMessage}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <TextBlock Grid.Row="2"
+                   Margin="24,0,24,18"
+                   FontSize="12"
+                   Foreground="#6B7280"
+                   Text="Flujo recomendado: configurar ARCA → probar conexión → cargar importe → emitir factura electrónica. El catálogo sólo guarda importes frecuentes; no administra stock ni listas comerciales."
+                   TextWrapping="Wrap" />
     </Grid>
 </Window>
