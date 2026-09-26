@@ -87,6 +87,54 @@ public class InvoiceFormViewModelTests
         Assert.False(viewModel.HasValidationMessage);
     }
 
+    [Fact]
+    public void LoadFrequentPrices_SelectingOneFillsInvoiceAmount()
+    {
+        var viewModel = CreateViewModel();
+        var product = new ProductRecord(
+            Id: 3,
+            Code: "0001",
+            Description: "Honorarios por servicio",
+            Unit: "Otras unidades",
+            UnitPriceCents: 125_000);
+
+        viewModel.LoadFrequentPrices([product]);
+        viewModel.SelectedFrequentPrice = viewModel.FrequentPrices.Single();
+
+        Assert.Equal("1250", viewModel.AmountText);
+        Assert.Equal("1250", viewModel.FrequentPriceAmountText);
+    }
+
+    [Fact]
+    public void TryPrepareNewFrequentPrice_UsesFixedProductData()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.FrequentPriceAmountText = "1500,50";
+
+        var result = viewModel.TryPrepareNewFrequentPrice(out var product);
+
+        Assert.True(result);
+        Assert.NotNull(product);
+        Assert.Equal(0, product.Id);
+        Assert.Equal("0001", product.Code);
+        Assert.Equal("Honorarios por servicio", product.Description);
+        Assert.Equal("Otras unidades", product.Unit);
+        Assert.Equal(150_050, product.UnitPriceCents);
+    }
+
+    [Fact]
+    public void TryPrepareSelectedFrequentPrice_RequiresSelection()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.FrequentPriceAmountText = "1500";
+
+        var result = viewModel.TryPrepareSelectedFrequentPrice(out var product);
+
+        Assert.False(result);
+        Assert.Null(product);
+        Assert.Equal("Seleccioná un importe frecuente para editar.", viewModel.CatalogValidationMessage);
+    }
+
     private static InvoiceFormViewModel CreateViewModel() =>
         new(() => new DateOnly(2026, 9, 25));
 }
