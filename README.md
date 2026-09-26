@@ -2,7 +2,7 @@
 
 Aplicación Windows local para automatizar la emisión de Facturas C de un único negocio mediante los servicios de ARCA. El MVP está pensado para una sola PC, un único usuario, CUIT y punto de venta.
 
-La base técnica incluye la solución, una aplicación WPF, tests automatizados, integración continua y documentación. Las reglas de dominio definen la configuración fiscal, los datos fijos y las fechas del período de servicio. `mod003` incorpora persistencia SQLite mínima para configuración, importes frecuentes y comprobantes. `mod004` suma una pantalla local para cargar importes, validar datos y guardar emisiones simuladas. `mod005` agrega un catálogo simple de importes frecuentes. `mod006` genera un PDF local del comprobante con campos pendientes de autorización. Todavía no incluye conexión con ARCA.
+La base técnica incluye la solución, una aplicación WPF, tests automatizados, integración continua y documentación. Las reglas de dominio definen la configuración fiscal, los datos fijos y las fechas del período de servicio. `mod003` incorpora persistencia SQLite mínima para configuración, importes frecuentes y comprobantes. `mod004` suma una pantalla local para cargar importes, validar datos y guardar emisiones simuladas. `mod005` agrega un catálogo simple de importes frecuentes. `mod006` genera un PDF local del comprobante con campos pendientes de autorización. `mod007` prepara la autenticación WSAA en homologación. Todavía no incluye emisión WSFEv1.
 
 ## Stack
 
@@ -54,3 +54,4 @@ dotnet run --project src/ArcaFacturador
 - [Facturación local simulada](docs/facturacion-local.md)
 - [Catálogo de importes frecuentes](docs/catalogo-precios.md)
 - [PDF local del comprobante](docs/pdf-local.md)
+- [WSAA en homologación](docs/wsaa-homologacion.md)

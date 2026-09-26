@@ -12,4 +12,7 @@ artifacts/
 *.pfx
 *.p12
 *.key
+*.pem
+*.crt
+*.csr
 appsettings.Local.json
