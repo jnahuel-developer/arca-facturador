@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Xml.Linq;
+using ArcaFacturador.Arca;
 
 namespace ArcaFacturador.Arca.Wsfev1;
 
@@ -24,6 +25,27 @@ public sealed class Wsfev1SoapClient(HttpClient httpClient, Wsfev1Options option
         var envelope = BuildEnvelope("FECompUltimoAutorizado", BuildLastAuthorizedBody(auth, pointOfSale, receiptType));
         var responseText = await SendAsync("FECompUltimoAutorizado", envelope, cancellationToken).ConfigureAwait(false);
         return ParseLastAuthorized(responseText, pointOfSale, receiptType);
+    }
+
+    public async Task<WsfeVoucher?> GetVoucherAsync(
+        WsfeAuth auth,
+        int pointOfSale,
+        int receiptType,
+        long receiptNumber,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(auth);
+        auth.Validate();
+        options.Validate();
+
+        if (receiptNumber <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(receiptNumber));
+        }
+
+        var envelope = BuildEnvelope("FECompConsultar", BuildVoucherQueryBody(auth, pointOfSale, receiptType, receiptNumber));
+        var responseText = await SendAsync("FECompConsultar", envelope, cancellationToken).ConfigureAwait(false);
+        return ParseVoucher(responseText, pointOfSale, receiptType, receiptNumber);
     }
 
     public async Task<WsfeCaeResponse> RequestCaeAsync(
@@ -55,7 +77,10 @@ public sealed class Wsfev1SoapClient(HttpClient httpClient, Wsfev1Options option
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException($"WSFEv1 devolvió HTTP {(int)response.StatusCode}: {ExtractFault(responseText)}");
+            var fault = ExtractFault(responseText);
+            throw new ArcaServiceException(
+                ArcaErrorClassifier.Classify(fault),
+                $"WSFEv1 devolvió HTTP {(int)response.StatusCode}: {fault}");
         }
 
         return responseText;
@@ -86,6 +111,22 @@ public sealed class Wsfev1SoapClient(HttpClient httpClient, Wsfev1Options option
                   </ar:Auth>
                   <ar:PtoVta>{pointOfSale}</ar:PtoVta>
                   <ar:CbteTipo>{receiptType}</ar:CbteTipo>
+            """;
+    }
+
+    private static string BuildVoucherQueryBody(WsfeAuth auth, int pointOfSale, int receiptType, long receiptNumber)
+    {
+        return $"""
+                  <ar:Auth>
+                    <ar:Token>{WebUtility.HtmlEncode(auth.Token)}</ar:Token>
+                    <ar:Sign>{WebUtility.HtmlEncode(auth.Sign)}</ar:Sign>
+                    <ar:Cuit>{auth.Cuit}</ar:Cuit>
+                  </ar:Auth>
+                  <ar:FeCompConsReq>
+                    <ar:CbteTipo>{receiptType}</ar:CbteTipo>
+                    <ar:CbteNro>{receiptNumber}</ar:CbteNro>
+                    <ar:PtoVta>{pointOfSale}</ar:PtoVta>
+                  </ar:FeCompConsReq>
             """;
     }
 
@@ -134,6 +175,33 @@ public sealed class Wsfev1SoapClient(HttpClient httpClient, Wsfev1Options option
         var document = XDocument.Parse(xml);
         var receiptNumber = ParseLong(FindRequiredValue(document, "CbteNro"));
         return new WsfeLastAuthorizedResult(pointOfSale, receiptType, receiptNumber);
+    }
+
+    private static WsfeVoucher? ParseVoucher(string xml, int pointOfSale, int receiptType, long receiptNumber)
+    {
+        var document = XDocument.Parse(xml);
+        var resultRoot = FindElement(document, "FECompConsultarResult")
+            ?? throw new InvalidOperationException("La respuesta de WSFEv1 no contiene FECompConsultarResult.");
+        var voucher = FindElement(resultRoot, "ResultGet");
+        if (voucher is null)
+        {
+            return null;
+        }
+
+        var result = FindOptionalChildValue(voucher, "Resultado") ?? string.Empty;
+        var cae = FindOptionalChildValue(voucher, "CodAutorizacion")
+            ?? FindOptionalChildValue(voucher, "CAE");
+        var caeExpirationDate = ParseOptionalDate(
+            FindOptionalChildValue(voucher, "FchVto")
+            ?? FindOptionalChildValue(voucher, "CAEFchVto"));
+
+        return new WsfeVoucher(
+            pointOfSale,
+            receiptType,
+            receiptNumber,
+            result,
+            cae,
+            caeExpirationDate);
     }
 
     private static WsfeCaeResponse ParseCaeResponse(string xml)

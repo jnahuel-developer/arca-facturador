@@ -8,7 +8,7 @@
 - Firma CMS con certificado local y clave privada.
 - Cliente SOAP para `loginCms`.
 - Interpretación del `loginTicketResponse`.
-- Caché temporal del ticket mientras siga vigente.
+- Caché local del ticket mientras siga vigente.
 - Carga de configuración local desde un archivo no versionado.
 - Ejemplo de configuración en `appsettings.example.json`.
 
@@ -89,6 +89,7 @@ También se puede configurar con certificado y clave privada en formato PEM:
 ## Qué no se versiona
 
 - `appsettings.Local.json`.
+- Cache local de tickets WSAA.
 - Certificados.
 - Claves privadas.
 - Archivos PFX/P12.
@@ -98,3 +99,9 @@ También se puede configurar con certificado y clave privada en formato PEM:
 ## Prueba real pendiente
 
 La prueba contra ARCA debe hacerse después de integrar `mod007`, cuando estén cargados el certificado y la autorización del servicio en homologación. La aplicación ya contiene las piezas técnicas para pedir el ticket; falta completar los datos locales reales y ejecutar la prueba controlada.
+
+Desde `mod009`, el ticket se guarda localmente en:
+
+```text
+%LOCALAPPDATA%\ArcaFacturador\wsaa-ticket-cache.json
+```

@@ -8,6 +8,13 @@ public interface IWsfev1Client
         int receiptType,
         CancellationToken cancellationToken = default);
 
+    Task<WsfeVoucher?> GetVoucherAsync(
+        WsfeAuth auth,
+        int pointOfSale,
+        int receiptType,
+        long receiptNumber,
+        CancellationToken cancellationToken = default);
+
     Task<WsfeCaeResponse> RequestCaeAsync(
         WsfeAuth auth,
         WsfeInvoiceRequest request,

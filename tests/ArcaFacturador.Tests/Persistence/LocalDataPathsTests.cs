@@ -18,4 +18,12 @@ public class LocalDataPathsTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => LocalDataPaths.GetInvoicePdfFilePath(0));
     }
+
+    [Fact]
+    public void WsaaTicketCacheFilePath_UsesApplicationDataDirectory()
+    {
+        var path = LocalDataPaths.WsaaTicketCacheFilePath;
+
+        Assert.EndsWith(Path.Combine("ArcaFacturador", "wsaa-ticket-cache.json"), path);
+    }
 }

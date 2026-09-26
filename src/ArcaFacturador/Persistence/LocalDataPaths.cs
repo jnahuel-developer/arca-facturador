@@ -16,6 +16,10 @@ public static class LocalDataPaths
         ApplicationDataDirectoryPath,
         "facturas");
 
+    public static string WsaaTicketCacheFilePath => Path.Combine(
+        ApplicationDataDirectoryPath,
+        "wsaa-ticket-cache.json");
+
     public static string GetInvoicePdfFilePath(long invoiceId)
     {
         if (invoiceId <= 0)

@@ -13,7 +13,7 @@ public sealed class WsaaCmsSigner
         ValidateCertificate(certificate);
 
         var contentInfo = new ContentInfo(Encoding.UTF8.GetBytes(loginTicketRequestXml));
-        var signedCms = new SignedCms(contentInfo, detached: true);
+        var signedCms = new SignedCms(contentInfo, detached: false);
         var signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, certificate)
         {
             IncludeOption = X509IncludeOption.EndCertOnly,

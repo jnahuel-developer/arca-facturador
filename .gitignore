@@ -16,3 +16,4 @@ artifacts/
 *.crt
 *.csr
 appsettings.Local.json
+wsaa-ticket-cache.json

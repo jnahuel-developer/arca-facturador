@@ -41,6 +41,24 @@ public class Wsfev1SoapClientTests
     }
 
     [Fact]
+    public async Task GetVoucherAsync_PostsQueryAndParsesAuthorizedVoucher()
+    {
+        var handler = new QueueHandler(BuildVoucherResponse());
+        using var httpClient = new HttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        var voucher = await client.GetVoucherAsync(CreateAuth(), pointOfSale: 1, receiptType: 11, receiptNumber: 126);
+
+        Assert.NotNull(voucher);
+        Assert.True(voucher.IsAuthorized);
+        Assert.Equal(126, voucher.ReceiptNumber);
+        Assert.Equal("74370123456789", voucher.Cae);
+        Assert.Equal(new DateOnly(2026, 10, 5), voucher.CaeExpirationDate);
+        Assert.Contains("FECompConsultar", handler.Requests.Single().Body);
+        Assert.Contains("<ar:CbteNro>126</ar:CbteNro>", handler.Requests.Single().Body);
+    }
+
+    [Fact]
     public async Task RequestCaeAsync_ParsesRejectedResponseWithErrors()
     {
         var handler = new QueueHandler(BuildRejectedCaeResponse());
@@ -124,6 +142,28 @@ public class Wsfev1SoapClientTests
                 </Errors>
               </FECAESolicitarResult>
             </FECAESolicitarResponse>
+          </soap:Body>
+        </soap:Envelope>
+        """;
+
+    public static string BuildVoucherResponse() => """
+        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+          <soap:Body>
+            <FECompConsultarResponse xmlns="http://ar.gov.afip.dif.FEV1/">
+              <FECompConsultarResult>
+                <ResultGet>
+                  <Concepto>2</Concepto>
+                  <DocTipo>99</DocTipo>
+                  <DocNro>0</DocNro>
+                  <CbteDesde>126</CbteDesde>
+                  <CbteHasta>126</CbteHasta>
+                  <CbteFch>20260925</CbteFch>
+                  <Resultado>A</Resultado>
+                  <CodAutorizacion>74370123456789</CodAutorizacion>
+                  <FchVto>20261005</FchVto>
+                </ResultGet>
+              </FECompConsultarResult>
+            </FECompConsultarResponse>
           </soap:Body>
         </soap:Envelope>
         """;
