@@ -4,6 +4,7 @@ public sealed record WsaaOptions
 {
     public const string DefaultService = "wsfe";
     public static readonly Uri HomologationLoginUrl = new("https://wsaahomo.afip.gov.ar/ws/services/LoginCms");
+    public static readonly Uri ProductionLoginUrl = new("https://wsaa.afip.gov.ar/ws/services/LoginCms");
 
     public string Service { get; init; } = DefaultService;
 
