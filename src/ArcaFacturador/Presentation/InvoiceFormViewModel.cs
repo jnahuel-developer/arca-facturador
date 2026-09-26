@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Globalization;
+using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using ArcaFacturador.Domain;
 using ArcaFacturador.Persistence.Models;
@@ -15,6 +16,10 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     private string? _validationMessage;
     private string? _statusMessage;
     private string? _amountPreview;
+    private string _frequentPriceAmountText = string.Empty;
+    private string? _catalogValidationMessage;
+    private string? _catalogStatusMessage;
+    private FrequentPriceItem? _selectedFrequentPrice;
 
     public InvoiceFormViewModel(Func<DateOnly>? todayProvider = null)
     {
@@ -26,6 +31,8 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public ObservableCollection<FrequentPriceItem> FrequentPrices { get; } = [];
 
     public string ReceiptType => InvoiceDefaults.ReceiptType;
 
@@ -109,6 +116,63 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
 
     public bool HasStatusMessage => !string.IsNullOrEmpty(StatusMessage);
 
+    public string FrequentPriceAmountText
+    {
+        get => _frequentPriceAmountText;
+        set
+        {
+            if (SetField(ref _frequentPriceAmountText, value))
+            {
+                ClearCatalogMessages();
+            }
+        }
+    }
+
+    public FrequentPriceItem? SelectedFrequentPrice
+    {
+        get => _selectedFrequentPrice;
+        set
+        {
+            if (!SetField(ref _selectedFrequentPrice, value) || value is null)
+            {
+                return;
+            }
+
+            AmountText = value.AmountText;
+            _frequentPriceAmountText = value.AmountText;
+            OnPropertyChanged(nameof(FrequentPriceAmountText));
+            ClearCatalogMessages();
+        }
+    }
+
+    public string? CatalogValidationMessage
+    {
+        get => _catalogValidationMessage;
+        private set
+        {
+            if (SetField(ref _catalogValidationMessage, value))
+            {
+                OnPropertyChanged(nameof(HasCatalogValidationMessage));
+            }
+        }
+    }
+
+    public bool HasCatalogValidationMessage => !string.IsNullOrEmpty(CatalogValidationMessage);
+
+    public string? CatalogStatusMessage
+    {
+        get => _catalogStatusMessage;
+        private set
+        {
+            if (SetField(ref _catalogStatusMessage, value))
+            {
+                OnPropertyChanged(nameof(HasCatalogStatusMessage));
+            }
+        }
+    }
+
+    public bool HasCatalogStatusMessage => !string.IsNullOrEmpty(CatalogStatusMessage);
+
     public bool TryPrepareInvoice(out InvoiceRecord? invoice)
     {
         invoice = null;
@@ -142,6 +206,88 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
             PdfPath: null);
         AmountPreview = FormatAmount(invoice.AmountCents);
         return true;
+    }
+
+    public void LoadFrequentPrices(IEnumerable<ProductRecord> products, long? selectedProductId = null)
+    {
+        ArgumentNullException.ThrowIfNull(products);
+
+        _selectedFrequentPrice = null;
+        OnPropertyChanged(nameof(SelectedFrequentPrice));
+        FrequentPrices.Clear();
+
+        FrequentPriceItem? selectedItem = null;
+        foreach (var product in products)
+        {
+            var item = FrequentPriceItem.FromProduct(product);
+            FrequentPrices.Add(item);
+
+            if (product.Id == selectedProductId)
+            {
+                selectedItem = item;
+            }
+        }
+
+        if (selectedItem is not null)
+        {
+            SelectedFrequentPrice = selectedItem;
+        }
+    }
+
+    public bool TryPrepareNewFrequentPrice(out ProductRecord? product)
+    {
+        return TryPrepareFrequentPrice(id: 0, out product);
+    }
+
+    public bool TryPrepareSelectedFrequentPrice(out ProductRecord? product)
+    {
+        product = null;
+        if (SelectedFrequentPrice is null)
+        {
+            CatalogStatusMessage = null;
+            CatalogValidationMessage = "Seleccioná un importe frecuente para editar.";
+            return false;
+        }
+
+        return TryPrepareFrequentPrice(SelectedFrequentPrice.Id, out product);
+    }
+
+    public bool TryGetSelectedFrequentPrice(out FrequentPriceItem? selectedFrequentPrice)
+    {
+        selectedFrequentPrice = SelectedFrequentPrice;
+        if (selectedFrequentPrice is not null)
+        {
+            return true;
+        }
+
+        CatalogStatusMessage = null;
+        CatalogValidationMessage = "Seleccioná un importe frecuente para borrar.";
+        return false;
+    }
+
+    public void MarkFrequentPriceAdded()
+    {
+        ShowCatalogStatus("Importe frecuente agregado.");
+    }
+
+    public void MarkFrequentPriceUpdated()
+    {
+        ShowCatalogStatus("Importe frecuente actualizado.");
+    }
+
+    public void MarkFrequentPriceDeleted()
+    {
+        _frequentPriceAmountText = string.Empty;
+        OnPropertyChanged(nameof(FrequentPriceAmountText));
+        ShowCatalogStatus("Importe frecuente eliminado.");
+    }
+
+    public void ShowCatalogError(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        CatalogStatusMessage = null;
+        CatalogValidationMessage = message;
     }
 
     public string BuildConfirmationMessage(InvoiceRecord invoice)
@@ -178,6 +324,39 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
 
     private static string FormatAmount(long amountInCents) =>
         (amountInCents / 100m).ToString("C2", ArgentineCulture);
+
+    private bool TryPrepareFrequentPrice(long id, out ProductRecord? product)
+    {
+        product = null;
+        CatalogValidationMessage = null;
+        CatalogStatusMessage = null;
+
+        if (string.IsNullOrWhiteSpace(FrequentPriceAmountText))
+        {
+            CatalogValidationMessage = "Ingresá el importe frecuente.";
+            return false;
+        }
+
+        if (!TryParseAmount(FrequentPriceAmountText, out var amountInCents, out var errorMessage))
+        {
+            CatalogValidationMessage = errorMessage;
+            return false;
+        }
+
+        product = new ProductRecord(
+            id,
+            ProductCode,
+            ProductDescription,
+            Unit,
+            amountInCents);
+        return true;
+    }
+
+    private void ShowCatalogStatus(string message)
+    {
+        CatalogValidationMessage = null;
+        CatalogStatusMessage = message;
+    }
 
     private static bool TryParseAmount(string amountText, out long amountInCents, out string errorMessage)
     {
@@ -243,6 +422,12 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         ValidationMessage = null;
         StatusMessage = null;
         AmountPreview = null;
+    }
+
+    private void ClearCatalogMessages()
+    {
+        CatalogValidationMessage = null;
+        CatalogStatusMessage = null;
     }
 
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
