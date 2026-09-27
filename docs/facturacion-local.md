@@ -13,9 +13,10 @@
   - Cantidad `1`.
   - Unidad `Otras unidades`.
 - Calcula las fechas según la regla acordada:
-  - `FchServDesde`: primer día del mes de emisión.
-  - `FchServHasta`: último día del mes de emisión.
-  - `FchVtoPago`: fecha de emisión.
+  - `CbteFch`: fecha de factura elegida en pantalla, sólo hoy o hasta 10 días corridos hacia atrás.
+  - `FchServDesde`: primer día del mes de la fecha de factura.
+  - `FchServHasta`: último día del mes de la fecha de factura.
+  - `FchVtoPago`: fecha actual de emisión/autorización.
 - Valida que el importe sea numérico, mayor que cero y con hasta dos decimales.
 - Pide confirmación antes de guardar.
 - Guarda un registro en SQLite con estado `Pending`.

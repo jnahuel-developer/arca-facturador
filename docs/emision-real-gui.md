@@ -45,8 +45,11 @@ Al guardar, la app crea o actualiza `appsettings.Local.json`, que no se versiona
 5. Presionar `Guardar configuración`.
 6. Ir a la pestaña `Facturación`.
 7. Presionar `Probar conexión ARCA`.
-8. Si la conexión responde OK, cargar importe y presionar `Emitir factura electrónica`.
-9. Revisar el comprobante en la pestaña `Comprobantes` y abrir el PDF generado.
+8. Si la conexión responde OK, cargar importe y elegir la fecha de factura.
+9. Presionar `Emitir factura electrónica`.
+10. Revisar el comprobante en la pestaña `Comprobantes` y abrir el PDF generado.
+
+La fecha de factura puede ser la fecha actual o un día anterior dentro de los últimos 10 días corridos. La aplicación no permite emitir a futuro. El vencimiento de pago se mantiene automáticamente en la fecha actual de emisión/autorización.
 
 ### Guardar borrador
 
@@ -67,7 +70,7 @@ Esta acción no emite comprobantes.
 
 Ejecuta el flujo fiscal real:
 
-1. valida importe y datos fijos;
+1. valida importe, fecha de factura y datos fijos;
 2. carga configuración local;
 3. muestra una confirmación previa con ambiente, CUIT, punto de venta, comprobante e importe;
 4. guarda la factura local como pendiente;

@@ -13,7 +13,11 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     private static readonly CultureInfo ArgentineCulture = CultureInfo.GetCultureInfo("es-AR");
     private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
     private static readonly NumberStyles AmountStyles = NumberStyles.Number;
+    private readonly Func<DateOnly> _todayProvider;
     private string _amountText = string.Empty;
+    private DateOnly _issueDate;
+    private DateOnly _serviceFrom;
+    private DateOnly _serviceTo;
     private string? _validationMessage;
     private string? _statusMessage;
     private string? _amountPreview;
@@ -35,11 +39,9 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
 
     public InvoiceFormViewModel(Func<DateOnly>? todayProvider = null)
     {
-        IssueDate = (todayProvider ?? Today)();
-        var serviceDates = ServiceDateRules.ForIssueDate(IssueDate);
-        ServiceFrom = serviceDates.ServiceFrom;
-        ServiceTo = serviceDates.ServiceTo;
-        PaymentDueDate = serviceDates.PaymentDueDate;
+        _todayProvider = todayProvider ?? Today;
+        _issueDate = CurrentDate;
+        RefreshServiceDates();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -70,19 +72,75 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
 
     public string Unit => InvoiceDefaults.Unit;
 
-    public DateOnly IssueDate { get; }
+    public DateOnly IssueDate
+    {
+        get => _issueDate;
+        private set
+        {
+            if (!SetField(ref _issueDate, value))
+            {
+                return;
+            }
+
+            RefreshServiceDates();
+            ClearMessages();
+            OnPropertyChanged(nameof(IssueDateText));
+            OnPropertyChanged(nameof(IssueDatePickerDate));
+        }
+    }
 
     public string IssueDateText => FormatDate(IssueDate);
 
-    public DateOnly ServiceFrom { get; }
+    public DateTime? IssueDatePickerDate
+    {
+        get => IssueDate.ToDateTime(TimeOnly.MinValue);
+        set
+        {
+            if (value is null)
+            {
+                ValidationMessage = "Seleccioná la fecha de factura.";
+                return;
+            }
+
+            IssueDate = DateOnly.FromDateTime(value.Value.Date);
+        }
+    }
+
+    public DateTime IssueDateMinimumDate =>
+        InvoiceIssueDateRules.MinimumAllowed(CurrentDate).ToDateTime(TimeOnly.MinValue);
+
+    public DateTime IssueDateMaximumDate =>
+        InvoiceIssueDateRules.MaximumAllowed(CurrentDate).ToDateTime(TimeOnly.MinValue);
+
+    public DateOnly ServiceFrom
+    {
+        get => _serviceFrom;
+        private set
+        {
+            if (SetField(ref _serviceFrom, value))
+            {
+                OnPropertyChanged(nameof(ServiceFromText));
+            }
+        }
+    }
 
     public string ServiceFromText => FormatDate(ServiceFrom);
 
-    public DateOnly ServiceTo { get; }
+    public DateOnly ServiceTo
+    {
+        get => _serviceTo;
+        private set
+        {
+            if (SetField(ref _serviceTo, value))
+            {
+                OnPropertyChanged(nameof(ServiceToText));
+            }
+        }
+    }
 
     public string ServiceToText => FormatDate(ServiceTo);
 
-    public DateOnly PaymentDueDate { get; }
+    public DateOnly PaymentDueDate => CurrentDate;
 
     public string PaymentDueDateText => FormatDate(PaymentDueDate);
 
@@ -306,6 +364,12 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         StatusMessage = null;
         AmountPreview = null;
 
+        if (!InvoiceIssueDateRules.TryValidate(IssueDate, CurrentDate, out var issueDateErrorMessage))
+        {
+            ValidationMessage = issueDateErrorMessage;
+            return false;
+        }
+
         if (string.IsNullOrWhiteSpace(AmountText))
         {
             ValidationMessage = "Ingresá el importe de la factura.";
@@ -421,7 +485,9 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         ArgumentNullException.ThrowIfNull(invoice);
 
         return $"Se guardará una emisión local por {FormatAmount(invoice.AmountCents)}.\n\n" +
+               $"Fecha de factura: {invoice.IssueDate:dd/MM/yyyy}\n" +
                $"Período: {invoice.ServiceFrom:dd/MM/yyyy} al {invoice.ServiceTo:dd/MM/yyyy}.\n" +
+               $"Vencimiento de pago: {invoice.PaymentDueDate:dd/MM/yyyy}\n" +
                "Todavía no se enviará información a ARCA. ¿Querés continuar?";
     }
 
@@ -441,7 +507,9 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
                $"Comprobante: {ReceiptType}\n" +
                $"Cliente: {CustomerType}\n" +
                $"Importe: {FormatAmount(invoice.AmountCents)}\n" +
-               $"Período: {invoice.ServiceFrom:dd/MM/yyyy} al {invoice.ServiceTo:dd/MM/yyyy}\n\n" +
+               $"Fecha de factura: {invoice.IssueDate:dd/MM/yyyy}\n" +
+               $"Período: {invoice.ServiceFrom:dd/MM/yyyy} al {invoice.ServiceTo:dd/MM/yyyy}\n" +
+               $"Vencimiento de pago: {invoice.PaymentDueDate:dd/MM/yyyy}\n\n" +
                "Si ARCA autoriza la operación, se generará número de comprobante y CAE. ¿Querés continuar?";
     }
 
@@ -648,6 +716,18 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     }
 
     private static DateOnly Today() => DateOnly.FromDateTime(DateTime.Today);
+
+    private DateOnly CurrentDate => _todayProvider();
+
+    private void RefreshServiceDates()
+    {
+        var serviceDates = ServiceDateRules.ForIssueDate(IssueDate, PaymentDueDate);
+        ServiceFrom = serviceDates.ServiceFrom;
+        ServiceTo = serviceDates.ServiceTo;
+        OnPropertyChanged(nameof(PaymentDueDateText));
+        OnPropertyChanged(nameof(IssueDateMinimumDate));
+        OnPropertyChanged(nameof(IssueDateMaximumDate));
+    }
 
     private static string FormatDate(DateOnly date) =>
         date.ToString("dd/MM/yyyy", ArgentineCulture);

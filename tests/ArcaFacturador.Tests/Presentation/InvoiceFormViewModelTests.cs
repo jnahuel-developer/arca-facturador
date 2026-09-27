@@ -31,18 +31,56 @@ public class InvoiceFormViewModelTests
     }
 
     [Fact]
-    public void TryPrepareInvoice_UsesServiceDatesFromIssueMonth()
+    public void TryPrepareInvoice_UsesSelectedIssueDateAndTodayAsPaymentDueDate()
     {
         var viewModel = CreateViewModel();
+        viewModel.IssueDatePickerDate = new DateTime(2026, 9, 23);
         viewModel.AmountText = "50000";
 
         viewModel.TryPrepareInvoice(out var invoice);
 
         Assert.NotNull(invoice);
-        Assert.Equal(new DateOnly(2026, 9, 25), invoice.IssueDate);
+        Assert.Equal(new DateOnly(2026, 9, 23), invoice.IssueDate);
         Assert.Equal(new DateOnly(2026, 9, 1), invoice.ServiceFrom);
         Assert.Equal(new DateOnly(2026, 9, 30), invoice.ServiceTo);
         Assert.Equal(new DateOnly(2026, 9, 25), invoice.PaymentDueDate);
+    }
+
+    [Fact]
+    public void TryPrepareInvoice_RejectsFutureIssueDate()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.IssueDatePickerDate = new DateTime(2026, 9, 26);
+        viewModel.AmountText = "50000";
+
+        var result = viewModel.TryPrepareInvoice(out var invoice);
+
+        Assert.False(result);
+        Assert.Null(invoice);
+        Assert.Equal("La fecha de factura no puede ser futura.", viewModel.ValidationMessage);
+    }
+
+    [Fact]
+    public void TryPrepareInvoice_RejectsIssueDateOlderThanTenDays()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.IssueDatePickerDate = new DateTime(2026, 9, 14);
+        viewModel.AmountText = "50000";
+
+        var result = viewModel.TryPrepareInvoice(out var invoice);
+
+        Assert.False(result);
+        Assert.Null(invoice);
+        Assert.Equal("La fecha de factura no puede tener más de 10 días corridos hacia atrás.", viewModel.ValidationMessage);
+    }
+
+    [Fact]
+    public void IssueDatePickerDate_ExposesAllowedRange()
+    {
+        var viewModel = CreateViewModel();
+
+        Assert.Equal(new DateTime(2026, 9, 15), viewModel.IssueDateMinimumDate);
+        Assert.Equal(new DateTime(2026, 9, 25), viewModel.IssueDateMaximumDate);
     }
 
     [Theory]

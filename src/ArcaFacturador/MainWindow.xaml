@@ -93,6 +93,19 @@
                                          FontSize="15"
                                          Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" />
 
+                                <TextBlock Margin="0,16,0,0"
+                                           Style="{StaticResource LabelText}"
+                                           Text="Fecha de factura" />
+                                <DatePicker Height="38"
+                                            DisplayDateStart="{Binding IssueDateMinimumDate}"
+                                            DisplayDateEnd="{Binding IssueDateMaximumDate}"
+                                            SelectedDate="{Binding IssueDatePickerDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Margin="0,6,0,0"
+                                           FontSize="12"
+                                           Foreground="#6B7280"
+                                           Text="Permitido: hoy o hasta 10 días corridos hacia atrás. No emite a futuro."
+                                           TextWrapping="Wrap" />
+
                                 <WrapPanel Margin="0,18,0,0">
                                     <Button Click="ValidateButton_Click"
                                             Content="Validar" />
@@ -187,7 +200,7 @@
                                                Text="{Binding QuantitySummary}" />
 
                                     <TextBlock Style="{StaticResource LabelText}"
-                                               Text="Fecha de emisión" />
+                                               Text="Fecha de factura" />
                                     <TextBlock Style="{StaticResource ValueText}"
                                                Text="{Binding IssueDateText}" />
 
@@ -202,7 +215,7 @@
                                                Text="{Binding ServiceToText}" />
 
                                     <TextBlock Style="{StaticResource LabelText}"
-                                               Text="Vencimiento de pago" />
+                                               Text="Vencimiento de pago (hoy)" />
                                     <TextBlock Style="{StaticResource ValueText}"
                                                Text="{Binding PaymentDueDateText}" />
                                 </StackPanel>

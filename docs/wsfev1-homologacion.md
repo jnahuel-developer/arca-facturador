@@ -17,9 +17,10 @@
   - `MonId`: `PES`.
   - `MonCotiz`: `1`.
 - Fechas de servicio ya definidas:
-  - `FchServDesde`: primer día del mes.
-  - `FchServHasta`: último día del mes.
-  - `FchVtoPago`: fecha de emisión.
+  - `CbteFch`: fecha de factura elegida, limitada a hoy o hasta 10 días corridos hacia atrás.
+  - `FchServDesde`: primer día del mes de la fecha de factura.
+  - `FchServHasta`: último día del mes de la fecha de factura.
+  - `FchVtoPago`: fecha actual de emisión/autorización.
 - Interpretación de aprobación, rechazo, observaciones y errores.
 - Persistencia de:
   - número fiscal autorizado;

@@ -16,7 +16,7 @@ Cada rama `modxxx` nace desde `develop`, aborda un único hito, documenta su alc
 
 **Origen:** `develop` luego de integrar `mod001`.
 
-**Alcance:** modelar y validar la configuración de un único CUIT y punto de venta; definir Factura C, consumidor final, transferencia bancaria, concepto servicios, código `0001`, descripción `Honorarios por servicio`, cantidad `1` y unidad local `Otras unidades`. Implementar reglas puras para `FchServDesde` como primer día del mes, `FchServHasta` como último día del mes y `FchVtoPago` como fecha de emisión. Sin persistencia ni ARCA.
+**Alcance:** modelar y validar la configuración de un único CUIT y punto de venta; definir Factura C, consumidor final, transferencia bancaria, concepto servicios, código `0001`, descripción `Honorarios por servicio`, cantidad `1` y unidad local `Otras unidades`. Implementar reglas puras para `FchServDesde` como primer día del mes, `FchServHasta` como último día del mes y `FchVtoPago` como fecha actual de emisión/autorización. Sin persistencia ni ARCA.
 
 **Pruebas de integración:** tests de constantes, validaciones y fechas, incluidos febrero, año bisiesto y cambio de año; build y tests completos exitosos.
 
