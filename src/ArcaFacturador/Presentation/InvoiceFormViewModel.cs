@@ -29,6 +29,9 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     private bool _arcaAllowProduction;
     private string? _arcaConfigurationValidationMessage;
     private string? _arcaConfigurationStatusMessage;
+    private InvoiceHistoryItem? _selectedInvoiceHistoryItem;
+    private string? _invoiceHistoryValidationMessage;
+    private string? _invoiceHistoryStatusMessage;
 
     public InvoiceFormViewModel(Func<DateOnly>? todayProvider = null)
     {
@@ -42,6 +45,8 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<FrequentPriceItem> FrequentPrices { get; } = [];
+
+    public ObservableCollection<InvoiceHistoryItem> InvoiceHistory { get; } = [];
 
     public IReadOnlyList<string> ArcaEnvironments { get; } =
     [
@@ -276,6 +281,24 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         private set => SetField(ref _arcaConfigurationStatusMessage, value);
     }
 
+    public InvoiceHistoryItem? SelectedInvoiceHistoryItem
+    {
+        get => _selectedInvoiceHistoryItem;
+        set => SetField(ref _selectedInvoiceHistoryItem, value);
+    }
+
+    public string? InvoiceHistoryValidationMessage
+    {
+        get => _invoiceHistoryValidationMessage;
+        private set => SetField(ref _invoiceHistoryValidationMessage, value);
+    }
+
+    public string? InvoiceHistoryStatusMessage
+    {
+        get => _invoiceHistoryStatusMessage;
+        private set => SetField(ref _invoiceHistoryStatusMessage, value);
+    }
+
     public bool TryPrepareInvoice(out InvoiceRecord? invoice)
     {
         invoice = null;
@@ -466,6 +489,59 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
             _amountText = string.Empty;
             OnPropertyChanged(nameof(AmountText));
         }
+    }
+
+    public void LoadInvoiceHistory(IEnumerable<InvoiceRecord> invoices)
+    {
+        ArgumentNullException.ThrowIfNull(invoices);
+
+        _selectedInvoiceHistoryItem = null;
+        OnPropertyChanged(nameof(SelectedInvoiceHistoryItem));
+        InvoiceHistory.Clear();
+
+        foreach (var invoice in invoices.OrderByDescending(invoice => invoice.Id))
+        {
+            InvoiceHistory.Add(InvoiceHistoryItem.FromInvoice(invoice));
+        }
+
+        InvoiceHistoryValidationMessage = null;
+        InvoiceHistoryStatusMessage = $"Comprobantes cargados: {InvoiceHistory.Count}.";
+    }
+
+    public bool TryGetSelectedInvoicePdfPath(out string pdfPath)
+    {
+        pdfPath = string.Empty;
+        InvoiceHistoryValidationMessage = null;
+        InvoiceHistoryStatusMessage = null;
+
+        if (SelectedInvoiceHistoryItem is null)
+        {
+            InvoiceHistoryValidationMessage = "Seleccioná un comprobante para abrir el PDF.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(SelectedInvoiceHistoryItem.PdfPath))
+        {
+            InvoiceHistoryValidationMessage = "El comprobante seleccionado no tiene PDF generado.";
+            return false;
+        }
+
+        pdfPath = SelectedInvoiceHistoryItem.PdfPath;
+        return true;
+    }
+
+    public void MarkInvoicePdfOpened()
+    {
+        InvoiceHistoryValidationMessage = null;
+        InvoiceHistoryStatusMessage = "PDF abierto.";
+    }
+
+    public void ShowInvoiceHistoryError(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        InvoiceHistoryStatusMessage = null;
+        InvoiceHistoryValidationMessage = message;
     }
 
     public void LoadArcaConfiguration(ArcaConfigurationForm form)

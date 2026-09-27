@@ -1,6 +1,7 @@
 using System.IO;
 using System.Net.Http;
 using System.Windows;
+using System.Diagnostics;
 using ArcaFacturador.Arca;
 using ArcaFacturador.Documents;
 using ArcaFacturador.Persistence;
@@ -36,6 +37,7 @@ public partial class MainWindow : Window
             new LocalArcaRuntimeFactory());
         DataContext = _viewModel;
         ReloadFrequentPrices();
+        ReloadInvoiceHistory();
         LoadArcaConfiguration();
         ArcaPfxPasswordBox.Password = _viewModel.ArcaPfxPassword;
     }
@@ -71,6 +73,7 @@ public partial class MainWindow : Window
                 LocalDataPaths.GetInvoicePdfFilePath(storedInvoice.Id));
             var invoiceWithPdf = _invoiceRepository.UpdatePdfPath(storedInvoice.Id, pdfPath);
             _viewModel.MarkAsSaved(invoiceWithPdf);
+            ReloadInvoiceHistory();
         }
         catch (InvalidOperationException)
         {
@@ -160,6 +163,7 @@ public partial class MainWindow : Window
         {
             var emissionResult = await _arcaEmissionService.EmitAsync(invoice);
             _viewModel.MarkElectronicEmissionCompleted(emissionResult);
+            ReloadInvoiceHistory();
         }
         catch (Exception exception) when (IsUserFacingArcaException(exception))
         {
@@ -250,6 +254,33 @@ public partial class MainWindow : Window
     private void ReloadFrequentPrices(long? selectedProductId = null)
     {
         _viewModel.LoadFrequentPrices(_productRepository.GetAll(), selectedProductId);
+    }
+
+    private void RefreshInvoiceHistoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        ReloadInvoiceHistory();
+    }
+
+    private void OpenInvoicePdfButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.TryGetSelectedInvoicePdfPath(out var pdfPath))
+        {
+            return;
+        }
+
+        if (!File.Exists(pdfPath))
+        {
+            _viewModel.ShowInvoiceHistoryError("No se encontró el PDF del comprobante seleccionado.");
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo(pdfPath) { UseShellExecute = true });
+        _viewModel.MarkInvoicePdfOpened();
+    }
+
+    private void ReloadInvoiceHistory()
+    {
+        _viewModel.LoadInvoiceHistory(_invoiceRepository.GetAll());
     }
 
     private void LoadArcaConfiguration()

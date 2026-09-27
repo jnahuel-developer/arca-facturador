@@ -34,8 +34,11 @@ public class WsfeInvoiceAuthorizationServiceTests
             Assert.Equal(126, outcome.Invoice.ReceiptNumber);
             Assert.Equal("74370123456789", outcome.Invoice.Cae);
             Assert.Equal(new DateOnly(2026, 10, 5), outcome.Invoice.CaeExpirationDate);
-            Assert.Contains("Comprobante autorizado por ARCA", pdfText);
-            Assert.Contains("CAE: 74370123456789", pdfText);
+            Assert.Contains("Comprobante Autorizado", pdfText);
+            Assert.Contains("Punto de Venta:", pdfText);
+            Assert.Contains("00001", pdfText);
+            Assert.Contains("CAE Nro:", pdfText);
+            Assert.Contains("74370123456789", pdfText);
         }
         finally
         {

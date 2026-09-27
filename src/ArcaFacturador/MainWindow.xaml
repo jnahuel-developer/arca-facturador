@@ -253,6 +253,73 @@
                 </ScrollViewer>
             </TabItem>
 
+            <TabItem Header="Comprobantes">
+                <Grid Margin="0,16,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            Style="{StaticResource Card}"
+                            Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Comprobantes emitidos desde la aplicación"
+                                       FontSize="22"
+                                       FontWeight="SemiBold" />
+                            <TextBlock Margin="0,6,0,0"
+                                       FontSize="13"
+                                       Foreground="#6B7280"
+                                       Text="Listado local de borradores, comprobantes autorizados y rechazados. Para verificar fiscalmente un comprobante Web Services, usar su punto de venta, número fiscal y CAE." />
+                        </StackPanel>
+                    </Border>
+
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding InvoiceHistory}"
+                              SelectedItem="{Binding SelectedInvoiceHistoryItem, Mode=TwoWay}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              SelectionMode="Single"
+                              HeadersVisibility="Column"
+                              CanUserAddRows="False"
+                              Margin="0,0,0,12">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Local" Binding="{Binding Id}" Width="70" />
+                            <DataGridTextColumn Header="Fecha" Binding="{Binding IssueDate}" Width="110" />
+                            <DataGridTextColumn Header="Estado" Binding="{Binding Status}" Width="120" />
+                            <DataGridTextColumn Header="Nro. fiscal" Binding="{Binding ReceiptNumber}" Width="120" />
+                            <DataGridTextColumn Header="Importe" Binding="{Binding Amount}" Width="110" />
+                            <DataGridTextColumn Header="CAE" Binding="{Binding Cae}" Width="180" />
+                            <DataGridTextColumn Header="Vto. CAE" Binding="{Binding CaeExpirationDate}" Width="110" />
+                            <DataGridTextColumn Header="PDF" Binding="{Binding PdfPath}" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Grid.Row="2"
+                            Style="{StaticResource Card}">
+                        <StackPanel>
+                            <WrapPanel>
+                                <Button Click="RefreshInvoiceHistoryButton_Click"
+                                        Content="Actualizar lista" />
+                                <Button Click="OpenInvoicePdfButton_Click"
+                                        Content="Abrir PDF seleccionado" />
+                            </WrapPanel>
+                            <TextBlock Margin="0,14,0,0"
+                                       FontSize="13"
+                                       Foreground="#B91C1C"
+                                       Text="{Binding InvoiceHistoryValidationMessage}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
+                                       FontSize="13"
+                                       Foreground="#047857"
+                                       Text="{Binding InvoiceHistoryStatusMessage}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
             <TabItem Header="Configuración ARCA">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <Border Margin="0,16,0,0"

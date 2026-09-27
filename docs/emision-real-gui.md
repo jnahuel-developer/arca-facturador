@@ -18,6 +18,7 @@
 La app abre maximizada y separa la operación en dos pestañas:
 
 - `Facturación`: carga de importes, borradores, prueba de conexión y emisión.
+- `Comprobantes`: listado local de comprobantes generados desde la aplicación y apertura del PDF.
 - `Configuración ARCA`: ambiente, CUIT, punto de venta y certificado.
 
 ### Configuración ARCA
@@ -45,6 +46,7 @@ Al guardar, la app crea o actualiza `appsettings.Local.json`, que no se versiona
 6. Ir a la pestaña `Facturación`.
 7. Presionar `Probar conexión ARCA`.
 8. Si la conexión responde OK, cargar importe y presionar `Emitir factura electrónica`.
+9. Revisar el comprobante en la pestaña `Comprobantes` y abrir el PDF generado.
 
 ### Guardar borrador
 
@@ -88,6 +90,21 @@ La app distingue estos casos:
 - `AuthorizedWithPdfError`: ARCA autorizó, pero hubo un problema regenerando el PDF local.
 - `Rejected`: ARCA rechazó la solicitud; no hay CAE.
 - `PendingReview`: hubo un error recuperable o resultado incierto; no debe reintentarse a ciegas.
+
+## PDF emitido
+
+El PDF local se genera con estructura similar al comprobante web de ARCA:
+
+- páginas `ORIGINAL`, `DUPLICADO` y `TRIPLICADO` para comprobantes autorizados;
+- tipo `C` y código `011`;
+- CUIT emisor, punto de venta, número fiscal y fecha;
+- período facturado y vencimiento de pago;
+- receptor consumidor final;
+- detalle fijo `0001 - Honorarios por servicio`;
+- totales;
+- CAE y vencimiento de CAE.
+
+El PDF se guarda en la carpeta local de facturas de la app y puede abrirse desde la pestaña `Comprobantes`.
 
 ## Checklist productivo mínimo
 
