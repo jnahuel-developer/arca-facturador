@@ -49,7 +49,7 @@ Al guardar, la app crea o actualiza `appsettings.Local.json`, que no se versiona
 9. Presionar `Emitir factura electrónica`.
 10. Revisar el comprobante en la pestaña `Comprobantes` y abrir el PDF generado.
 
-La fecha de factura puede ser la fecha actual o un día anterior dentro de los últimos 10 días corridos. La aplicación no permite emitir a futuro. El vencimiento de pago se mantiene automáticamente en la fecha actual de emisión/autorización.
+La fecha de factura puede ser la fecha actual o un día anterior dentro de los últimos 10 días corridos. La aplicación no permite emitir a futuro ni usar una fecha anterior a la última Factura C autorizada en ARCA para ese punto de venta. El vencimiento de pago se mantiene automáticamente en la fecha actual de emisión/autorización.
 
 ### Guardar borrador
 
@@ -62,7 +62,8 @@ Ejecuta una prueba no emisora:
 1. carga `appsettings.Local.json`;
 2. valida ambiente, CUIT, punto de venta y certificado;
 3. obtiene TA mediante WSAA;
-4. consulta `FECompUltimoAutorizado` en WSFEv1.
+4. consulta `FECompUltimoAutorizado` en WSFEv1;
+5. consulta el detalle del último comprobante autorizado para ajustar la fecha mínima permitida.
 
 Esta acción no emite comprobantes.
 

@@ -52,6 +52,7 @@ public class Wsfev1SoapClientTests
         Assert.NotNull(voucher);
         Assert.True(voucher.IsAuthorized);
         Assert.Equal(126, voucher.ReceiptNumber);
+        Assert.Equal(new DateOnly(2026, 9, 25), voucher.ReceiptDate);
         Assert.Equal("74370123456789", voucher.Cae);
         Assert.Equal(new DateOnly(2026, 10, 5), voucher.CaeExpirationDate);
         Assert.Contains("FECompConsultar", handler.Requests.Single().Body);

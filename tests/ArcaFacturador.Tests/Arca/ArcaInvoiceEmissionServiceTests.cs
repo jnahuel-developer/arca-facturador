@@ -15,12 +15,15 @@ public class ArcaInvoiceEmissionServiceTests
     public async Task TestConnectionAsync_ConsultsLastAuthorizedWithoutEmitting()
     {
         using var temporaryDatabase = new TemporaryDatabase();
-        var wsfeClient = new FakeWsfeClient(new WsfeLastAuthorizedResult(1, 11, 42));
+        var wsfeClient = new FakeWsfeClient(
+            new WsfeLastAuthorizedResult(1, 11, 42),
+            vouchers: [CreateAuthorizedVoucher(42, new DateOnly(2026, 9, 25))]);
         var service = CreateService(temporaryDatabase, wsfeClient);
 
         var result = await service.TestConnectionAsync();
 
         Assert.Equal(42, result.LastAuthorizedReceiptNumber);
+        Assert.Equal(new DateOnly(2026, 9, 25), result.LastAuthorizedIssueDate);
         Assert.Equal(1, wsfeClient.LastAuthorizedRequestCount);
         Assert.Equal(0, wsfeClient.CaeRequestCount);
     }
@@ -41,6 +44,28 @@ public class ArcaInvoiceEmissionServiceTests
         Assert.Equal(43, result.Invoice.ReceiptNumber);
         Assert.Equal("74370123456789", result.Invoice.Cae);
         Assert.Equal(1, wsfeClient.CaeRequestCount);
+    }
+
+    [Fact]
+    public async Task EmitAsync_WhenIssueDateIsBeforeLastAuthorizedIssueDate_RejectsBeforeRequestingCae()
+    {
+        using var temporaryDatabase = new TemporaryDatabase();
+        var repository = new InvoiceRepository(temporaryDatabase.Database);
+        var wsfeClient = new FakeWsfeClient(
+            new WsfeLastAuthorizedResult(1, 11, 42),
+            caeResponse: CreateAuthorizedResponse(receiptNumber: 43),
+            vouchers: [CreateAuthorizedVoucher(42, new DateOnly(2026, 9, 25))]);
+        var service = new ArcaInvoiceEmissionService(
+            repository,
+            new InvoicePdfGenerator(),
+            new FakeRuntimeFactory(wsfeClient));
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.EmitAsync(CreateInvoice() with { IssueDate = new DateOnly(2026, 9, 24) }));
+
+        Assert.Contains("último comprobante autorizado", exception.Message);
+        Assert.Empty(repository.GetAll());
+        Assert.Equal(0, wsfeClient.CaeRequestCount);
     }
 
     [Fact]
@@ -115,6 +140,15 @@ public class ArcaInvoiceEmissionServiceTests
         CaeExpirationDate: null,
         Observations: [],
         Errors: [new WsfeMessage(10016, "Rechazado")]);
+
+    private static WsfeVoucher CreateAuthorizedVoucher(long receiptNumber, DateOnly receiptDate) => new(
+        PointOfSale: 1,
+        ReceiptType: 11,
+        ReceiptNumber: receiptNumber,
+        ReceiptDate: receiptDate,
+        Result: "A",
+        Cae: "74370123456789",
+        CaeExpirationDate: new DateOnly(2026, 10, 5));
 
     private sealed class FakeRuntimeFactory(FakeWsfeClient wsfeClient) : IArcaRuntimeFactory
     {

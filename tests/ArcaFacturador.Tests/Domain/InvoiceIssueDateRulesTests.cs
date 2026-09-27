@@ -41,4 +41,27 @@ public class InvoiceIssueDateRulesTests
         Assert.False(result);
         Assert.Equal("La fecha de factura no puede tener más de 10 días corridos hacia atrás.", errorMessage);
     }
+
+    [Fact]
+    public void TryValidate_RejectsIssueDateBeforeLastAuthorizedIssueDate()
+    {
+        var result = InvoiceIssueDateRules.TryValidate(
+            new DateOnly(2026, 9, 24),
+            new DateOnly(2026, 9, 27),
+            out var errorMessage,
+            lastAuthorizedIssueDate: new DateOnly(2026, 9, 25));
+
+        Assert.False(result);
+        Assert.Equal("La fecha de factura no puede ser anterior al último comprobante autorizado en ARCA (25/09/2026).", errorMessage);
+    }
+
+    [Fact]
+    public void MinimumAllowed_UsesLastAuthorizedIssueDateWhenItIsNewer()
+    {
+        var minimumAllowed = InvoiceIssueDateRules.MinimumAllowed(
+            new DateOnly(2026, 9, 27),
+            new DateOnly(2026, 9, 25));
+
+        Assert.Equal(new DateOnly(2026, 9, 25), minimumAllowed);
+    }
 }

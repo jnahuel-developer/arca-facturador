@@ -21,6 +21,7 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     private string? _validationMessage;
     private string? _statusMessage;
     private string? _amountPreview;
+    private DateOnly? _lastAuthorizedIssueDate;
     private string _frequentPriceAmountText = string.Empty;
     private string? _catalogValidationMessage;
     private string? _catalogStatusMessage;
@@ -107,7 +108,7 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     }
 
     public DateTime IssueDateMinimumDate =>
-        InvoiceIssueDateRules.MinimumAllowed(CurrentDate).ToDateTime(TimeOnly.MinValue);
+        GetIssueDateMinimumForPicker().ToDateTime(TimeOnly.MinValue);
 
     public DateTime IssueDateMaximumDate =>
         InvoiceIssueDateRules.MaximumAllowed(CurrentDate).ToDateTime(TimeOnly.MinValue);
@@ -364,7 +365,7 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         StatusMessage = null;
         AmountPreview = null;
 
-        if (!InvoiceIssueDateRules.TryValidate(IssueDate, CurrentDate, out var issueDateErrorMessage))
+        if (!InvoiceIssueDateRules.TryValidate(IssueDate, CurrentDate, out var issueDateErrorMessage, _lastAuthorizedIssueDate))
         {
             ValidationMessage = issueDateErrorMessage;
             return false;
@@ -529,11 +530,15 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     {
         ArgumentNullException.ThrowIfNull(result);
 
+        ApplyLastAuthorizedIssueDate(result.LastAuthorizedIssueDate);
+        var lastAuthorizedDateText = result.LastAuthorizedIssueDate is { } lastAuthorizedIssueDate
+            ? $", fecha {FormatDate(lastAuthorizedIssueDate)}"
+            : string.Empty;
         ValidationMessage = null;
         StatusMessage = $"Conexión ARCA OK en {result.Preview.Environment}. " +
                         $"CUIT {result.Preview.FiscalConfiguration.Cuit}, " +
                         $"PV {result.Preview.FiscalConfiguration.PointOfSale}, " +
-                        $"última Factura C autorizada: {result.LastAuthorizedReceiptNumber}.";
+                        $"última Factura C autorizada: {result.LastAuthorizedReceiptNumber}{lastAuthorizedDateText}.";
     }
 
     public void MarkElectronicEmissionCompleted(ArcaEmissionResult result)
@@ -719,6 +724,18 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
 
     private DateOnly CurrentDate => _todayProvider();
 
+    private DateOnly GetIssueDateMinimum() =>
+        InvoiceIssueDateRules.MinimumAllowed(CurrentDate, _lastAuthorizedIssueDate);
+
+    private DateOnly GetIssueDateMinimumForPicker()
+    {
+        var minimumIssueDate = GetIssueDateMinimum();
+        var maximumIssueDate = InvoiceIssueDateRules.MaximumAllowed(CurrentDate);
+        return minimumIssueDate > maximumIssueDate
+            ? maximumIssueDate
+            : minimumIssueDate;
+    }
+
     private void RefreshServiceDates()
     {
         var serviceDates = ServiceDateRules.ForIssueDate(IssueDate, PaymentDueDate);
@@ -727,6 +744,18 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(PaymentDueDateText));
         OnPropertyChanged(nameof(IssueDateMinimumDate));
         OnPropertyChanged(nameof(IssueDateMaximumDate));
+    }
+
+    private void ApplyLastAuthorizedIssueDate(DateOnly? lastAuthorizedIssueDate)
+    {
+        _lastAuthorizedIssueDate = lastAuthorizedIssueDate;
+        OnPropertyChanged(nameof(IssueDateMinimumDate));
+
+        var minimumIssueDate = GetIssueDateMinimum();
+        if (IssueDate < minimumIssueDate && minimumIssueDate <= InvoiceIssueDateRules.MaximumAllowed(CurrentDate))
+        {
+            IssueDate = minimumIssueDate;
+        }
     }
 
     private static string FormatDate(DateOnly date) =>

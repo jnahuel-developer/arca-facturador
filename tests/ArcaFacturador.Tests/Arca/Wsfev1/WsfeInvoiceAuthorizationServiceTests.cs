@@ -159,6 +159,7 @@ public class WsfeInvoiceAuthorizationServiceTests
         PointOfSale: 1,
         ReceiptType: 11,
         ReceiptNumber: 126,
+        ReceiptDate: new DateOnly(2026, 9, 25),
         Result: "A",
         Cae: "74370123456789",
         CaeExpirationDate: new DateOnly(2026, 10, 5));

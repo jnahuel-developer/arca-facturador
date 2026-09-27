@@ -13,7 +13,7 @@
   - Cantidad `1`.
   - Unidad `Otras unidades`.
 - Calcula las fechas según la regla acordada:
-  - `CbteFch`: fecha de factura elegida en pantalla, sólo hoy o hasta 10 días corridos hacia atrás.
+  - `CbteFch`: fecha de factura elegida en pantalla, sólo hoy o hasta 10 días corridos hacia atrás, sin retroceder respecto de la última Factura C autorizada en ARCA.
   - `FchServDesde`: primer día del mes de la fecha de factura.
   - `FchServHasta`: último día del mes de la fecha de factura.
   - `FchVtoPago`: fecha actual de emisión/autorización.

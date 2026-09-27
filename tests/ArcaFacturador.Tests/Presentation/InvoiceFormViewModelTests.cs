@@ -83,6 +83,48 @@ public class InvoiceFormViewModelTests
         Assert.Equal(new DateTime(2026, 9, 25), viewModel.IssueDateMaximumDate);
     }
 
+    [Fact]
+    public void MarkConnectionTested_UsesLastAuthorizedIssueDateAsMinimum()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.IssueDatePickerDate = new DateTime(2026, 9, 24);
+
+        viewModel.MarkConnectionTested(new ArcaConnectionTestResult(
+            new ArcaOperationPreview(
+                ArcaEnvironmentName.Produccion,
+                new FiscalConfiguration("20111111112", 1),
+                "appsettings.Local.json"),
+            LastAuthorizedReceiptNumber: 42,
+            LastAuthorizedIssueDate: new DateOnly(2026, 9, 25)));
+
+        Assert.Equal(new DateTime(2026, 9, 25), viewModel.IssueDateMinimumDate);
+        Assert.Equal(new DateOnly(2026, 9, 25), viewModel.IssueDate);
+        Assert.Contains("fecha 25/09/2026", viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public void TryPrepareInvoice_RejectsIssueDateBeforeLastAuthorizedIssueDate()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.MarkConnectionTested(new ArcaConnectionTestResult(
+            new ArcaOperationPreview(
+                ArcaEnvironmentName.Produccion,
+                new FiscalConfiguration("20111111112", 1),
+                "appsettings.Local.json"),
+            LastAuthorizedReceiptNumber: 42,
+            LastAuthorizedIssueDate: new DateOnly(2026, 9, 25)));
+        viewModel.IssueDatePickerDate = new DateTime(2026, 9, 24);
+        viewModel.AmountText = "50000";
+
+        var result = viewModel.TryPrepareInvoice(out var invoice);
+
+        Assert.False(result);
+        Assert.Null(invoice);
+        Assert.Equal(
+            "La fecha de factura no puede ser anterior al último comprobante autorizado en ARCA (25/09/2026).",
+            viewModel.ValidationMessage);
+    }
+
     [Theory]
     [InlineData("", "Ingresá el importe de la factura.")]
     [InlineData("texto", "Ingresá un importe válido, por ejemplo 125000,00.")]
