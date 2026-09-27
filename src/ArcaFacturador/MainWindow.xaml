@@ -97,8 +97,8 @@
                                            Style="{StaticResource LabelText}"
                                            Text="Fecha de factura" />
                                 <DatePicker Height="38"
-                                            DisplayDateStart="{Binding IssueDateMinimumDate}"
-                                            DisplayDateEnd="{Binding IssueDateMaximumDate}"
+                                            DisplayDateStart="{Binding IssueDateMinimumDate, Mode=OneWay}"
+                                            DisplayDateEnd="{Binding IssueDateMaximumDate, Mode=OneWay}"
                                             SelectedDate="{Binding IssueDatePickerDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBlock Margin="0,6,0,0"
                                            FontSize="12"
