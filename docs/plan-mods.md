@@ -104,6 +104,6 @@ Cada rama `modxxx` nace desde `develop`, aborda un único hito, documenta su alc
 
 **Origen:** `develop` luego de integrar `mod012`.
 
-**Alcance:** ejecutar pruebas de aceptación de punta a punta, corregir únicamente bloqueantes del MVP, completar manual operativo y checklist de recuperación, fijar versión y preparar el PR/MR de `develop` a `main`.
+**Alcance:** ejecutar pruebas de aceptación de punta a punta, corregir únicamente bloqueantes del MVP, completar manual operativo y checklist de recuperación, fijar versión `1.0.0` y preparar el PR/MR de `develop` a `main`.
 
 **Pruebas de integración:** emisión real controlada de una Factura C, verificación en ARCA, persistencia y PDF con CAE, reinicio y consulta local, instalación reproducible, CI verde y aceptación del usuario. Luego se etiqueta la versión estable correspondiente.
