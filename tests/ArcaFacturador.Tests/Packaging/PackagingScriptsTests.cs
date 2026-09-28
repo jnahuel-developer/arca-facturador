@@ -7,6 +7,9 @@ public class PackagingScriptsTests
     [InlineData("Install-ArcaFacturador.ps1")]
     [InlineData("Uninstall-ArcaFacturador.ps1")]
     [InlineData("Backup-ArcaFacturadorData.ps1")]
+    [InlineData("Instalar.cmd")]
+    [InlineData("Desinstalar.cmd")]
+    [InlineData("Backup.cmd")]
     public void PackagingScript_Exists(string fileName)
     {
         var scriptPath = Path.Combine(GetRepositoryRoot(), "scripts", fileName);
@@ -33,6 +36,20 @@ public class PackagingScriptsTests
 
         Assert.Contains("Programs\\ArcaFacturador", script, StringComparison.Ordinal);
         Assert.Contains("Los datos locales permanecen", script, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CommandWrappers_UseProcessScopedExecutionPolicyBypass()
+    {
+        var scriptsPath = Path.Combine(GetRepositoryRoot(), "scripts");
+
+        foreach (var fileName in new[] { "Instalar.cmd", "Desinstalar.cmd", "Backup.cmd" })
+        {
+            var script = File.ReadAllText(Path.Combine(scriptsPath, fileName));
+
+            Assert.Contains("-ExecutionPolicy Bypass", script, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("powershell.exe", script, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private static string GetRepositoryRoot()

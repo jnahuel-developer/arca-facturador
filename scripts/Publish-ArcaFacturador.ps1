@@ -64,6 +64,9 @@ Get-ChildItem -Path $publishPath -File | Where-Object { $_.Extension -ne ".pdb" 
 Copy-Item -Path (Join-Path $PSScriptRoot "Install-ArcaFacturador.ps1") -Destination $packagePath -Force
 Copy-Item -Path (Join-Path $PSScriptRoot "Uninstall-ArcaFacturador.ps1") -Destination $packagePath -Force
 Copy-Item -Path (Join-Path $PSScriptRoot "Backup-ArcaFacturadorData.ps1") -Destination $packagePath -Force
+Copy-Item -Path (Join-Path $PSScriptRoot "Instalar.cmd") -Destination $packagePath -Force
+Copy-Item -Path (Join-Path $PSScriptRoot "Desinstalar.cmd") -Destination $packagePath -Force
+Copy-Item -Path (Join-Path $PSScriptRoot "Backup.cmd") -Destination $packagePath -Force
 Copy-Item -Path (Join-Path $repoRoot "docs\instalacion-local.md") -Destination (Join-Path $packagePath "LEEME-INSTALACION.md") -Force
 
 Compress-Archive -Path (Join-Path $packagePath "*") -DestinationPath $zipPath -Force

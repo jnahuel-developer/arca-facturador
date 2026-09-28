@@ -41,6 +41,9 @@ artifacts\package\
 La carpeta `artifacts\package` contiene:
 
 - `ArcaFacturador\` con la app publicada;
+- `Instalar.cmd`;
+- `Backup.cmd`;
+- `Desinstalar.cmd`;
 - `Install-ArcaFacturador.ps1`;
 - `Uninstall-ArcaFacturador.ps1`;
 - `Backup-ArcaFacturadorData.ps1`;
@@ -49,11 +52,14 @@ La carpeta `artifacts\package` contiene:
 ## Instalación limpia
 
 1. Descomprimir `ArcaFacturador-win-x64.zip`.
-2. Abrir PowerShell en la carpeta descomprimida.
-3. Ejecutar:
+2. Ejecutar `Instalar.cmd`.
+
+Ese archivo usa PowerShell con política de ejecución temporal `Bypass` sólo para esa instalación. No cambia la política del sistema.
+
+Alternativamente, desde PowerShell:
 
 ```powershell
-.\Install-ArcaFacturador.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Install-ArcaFacturador.ps1
 ```
 
 Por defecto instala en:
@@ -75,10 +81,12 @@ Para actualizar:
 
 1. Generar o recibir un paquete nuevo.
 2. Descomprimirlo.
-3. Ejecutar nuevamente:
+3. Ejecutar nuevamente `Instalar.cmd`.
+
+Alternativamente, desde PowerShell:
 
 ```powershell
-.\Install-ArcaFacturador.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Install-ArcaFacturador.ps1
 ```
 
 La actualización reemplaza los binarios de la app, pero no borra la carpeta de datos locales. La versión anterior de la app queda movida temporalmente a `%TEMP%`.
@@ -87,8 +95,14 @@ La actualización reemplaza los binarios de la app, pero no borra la carpeta de 
 
 Antes de actualizar o desinstalar conviene ejecutar:
 
+```text
+Backup.cmd
+```
+
+Alternativamente, desde PowerShell:
+
 ```powershell
-.\Backup-ArcaFacturadorData.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Backup-ArcaFacturadorData.ps1
 ```
 
 Por defecto genera un `.zip` en:
@@ -103,8 +117,14 @@ El backup incluye base SQLite, PDFs, configuración local y cache. No reemplaza 
 
 Para quitar la aplicación sin borrar datos:
 
+```text
+Desinstalar.cmd
+```
+
+Alternativamente, desde PowerShell:
+
 ```powershell
-.\Uninstall-ArcaFacturador.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Uninstall-ArcaFacturador.ps1
 ```
 
 Esto elimina la carpeta instalada y accesos directos. No elimina base de datos, PDFs ni configuración fiscal.
@@ -112,7 +132,7 @@ Esto elimina la carpeta instalada y accesos directos. No elimina base de datos, 
 Para borrar también datos locales hay que pedirlo explícitamente:
 
 ```powershell
-.\Uninstall-ArcaFacturador.ps1 -RemoveLocalData -ConfirmRemoveLocalData
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Uninstall-ArcaFacturador.ps1 -RemoveLocalData -ConfirmRemoveLocalData
 ```
 
 Ese comando elimina:
@@ -130,8 +150,8 @@ Usarlo sólo después de confirmar que existe un backup válido.
 3. Ejecutar `dotnet test`.
 4. Ejecutar `.\scripts\Publish-ArcaFacturador.ps1`.
 5. Descomprimir el `.zip` generado.
-6. Ejecutar `.\Install-ArcaFacturador.ps1`.
+6. Ejecutar `Instalar.cmd`.
 7. Abrir la app desde el acceso directo.
 8. Confirmar que la configuración ARCA y comprobantes previos siguen disponibles.
-9. Ejecutar `.\Backup-ArcaFacturadorData.ps1`.
+9. Ejecutar `Backup.cmd`.
 10. Verificar que el `.zip` de backup contiene base, PDFs y configuración local.

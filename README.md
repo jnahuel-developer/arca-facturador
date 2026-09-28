@@ -46,6 +46,8 @@ dotnet run --project src/ArcaFacturador
 .\scripts\Publish-ArcaFacturador.ps1
 ```
 
+El paquete generado incluye `Instalar.cmd`, que evita bloqueos por política de ejecución de PowerShell sin cambiar la configuración global del equipo.
+
 ## Documentación
 
 - [Alcance del MVP](docs/alcance-mvp.md)
