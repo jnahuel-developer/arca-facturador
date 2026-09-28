@@ -38,4 +38,16 @@ public class ServiceDateRulesTests
         Assert.Equal(new DateOnly(2026, 12, 31), dates.ServiceTo);
         Assert.Equal(issueDate, dates.PaymentDueDate);
     }
+
+    [Fact]
+    public void ForIssueDate_CanUseDifferentPaymentDueDate()
+    {
+        var dates = ServiceDateRules.ForIssueDate(
+            new DateOnly(2026, 9, 23),
+            new DateOnly(2026, 9, 25));
+
+        Assert.Equal(new DateOnly(2026, 9, 1), dates.ServiceFrom);
+        Assert.Equal(new DateOnly(2026, 9, 30), dates.ServiceTo);
+        Assert.Equal(new DateOnly(2026, 9, 25), dates.PaymentDueDate);
+    }
 }

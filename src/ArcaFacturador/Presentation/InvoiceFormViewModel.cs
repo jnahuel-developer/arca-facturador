@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
+using ArcaFacturador.Arca;
 using ArcaFacturador.Domain;
 using ArcaFacturador.Persistence.Models;
 
@@ -12,27 +13,49 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     private static readonly CultureInfo ArgentineCulture = CultureInfo.GetCultureInfo("es-AR");
     private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
     private static readonly NumberStyles AmountStyles = NumberStyles.Number;
+    private readonly Func<DateOnly> _todayProvider;
     private string _amountText = string.Empty;
+    private DateOnly _issueDate;
+    private DateOnly _serviceFrom;
+    private DateOnly _serviceTo;
     private string? _validationMessage;
     private string? _statusMessage;
     private string? _amountPreview;
+    private DateOnly? _lastAuthorizedIssueDate;
     private string _frequentPriceAmountText = string.Empty;
     private string? _catalogValidationMessage;
     private string? _catalogStatusMessage;
     private FrequentPriceItem? _selectedFrequentPrice;
+    private string _arcaEnvironment = ArcaEnvironmentName.Homologacion;
+    private string _arcaRepresentedCuit = string.Empty;
+    private string _arcaPointOfSaleText = "1";
+    private string _arcaPfxPath = string.Empty;
+    private string _arcaPfxPassword = string.Empty;
+    private bool _arcaAllowProduction;
+    private string? _arcaConfigurationValidationMessage;
+    private string? _arcaConfigurationStatusMessage;
+    private InvoiceHistoryItem? _selectedInvoiceHistoryItem;
+    private string? _invoiceHistoryValidationMessage;
+    private string? _invoiceHistoryStatusMessage;
 
     public InvoiceFormViewModel(Func<DateOnly>? todayProvider = null)
     {
-        IssueDate = (todayProvider ?? Today)();
-        var serviceDates = ServiceDateRules.ForIssueDate(IssueDate);
-        ServiceFrom = serviceDates.ServiceFrom;
-        ServiceTo = serviceDates.ServiceTo;
-        PaymentDueDate = serviceDates.PaymentDueDate;
+        _todayProvider = todayProvider ?? Today;
+        _issueDate = CurrentDate;
+        RefreshServiceDates();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<FrequentPriceItem> FrequentPrices { get; } = [];
+
+    public ObservableCollection<InvoiceHistoryItem> InvoiceHistory { get; } = [];
+
+    public IReadOnlyList<string> ArcaEnvironments { get; } =
+    [
+        ArcaEnvironmentName.Homologacion,
+        ArcaEnvironmentName.Produccion,
+    ];
 
     public string ReceiptType => InvoiceDefaults.ReceiptType;
 
@@ -50,19 +73,75 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
 
     public string Unit => InvoiceDefaults.Unit;
 
-    public DateOnly IssueDate { get; }
+    public DateOnly IssueDate
+    {
+        get => _issueDate;
+        private set
+        {
+            if (!SetField(ref _issueDate, value))
+            {
+                return;
+            }
+
+            RefreshServiceDates();
+            ClearMessages();
+            OnPropertyChanged(nameof(IssueDateText));
+            OnPropertyChanged(nameof(IssueDatePickerDate));
+        }
+    }
 
     public string IssueDateText => FormatDate(IssueDate);
 
-    public DateOnly ServiceFrom { get; }
+    public DateTime? IssueDatePickerDate
+    {
+        get => IssueDate.ToDateTime(TimeOnly.MinValue);
+        set
+        {
+            if (value is null)
+            {
+                ValidationMessage = "Seleccioná la fecha de factura.";
+                return;
+            }
+
+            IssueDate = DateOnly.FromDateTime(value.Value.Date);
+        }
+    }
+
+    public DateTime IssueDateMinimumDate =>
+        GetIssueDateMinimumForPicker().ToDateTime(TimeOnly.MinValue);
+
+    public DateTime IssueDateMaximumDate =>
+        InvoiceIssueDateRules.MaximumAllowed(CurrentDate).ToDateTime(TimeOnly.MinValue);
+
+    public DateOnly ServiceFrom
+    {
+        get => _serviceFrom;
+        private set
+        {
+            if (SetField(ref _serviceFrom, value))
+            {
+                OnPropertyChanged(nameof(ServiceFromText));
+            }
+        }
+    }
 
     public string ServiceFromText => FormatDate(ServiceFrom);
 
-    public DateOnly ServiceTo { get; }
+    public DateOnly ServiceTo
+    {
+        get => _serviceTo;
+        private set
+        {
+            if (SetField(ref _serviceTo, value))
+            {
+                OnPropertyChanged(nameof(ServiceToText));
+            }
+        }
+    }
 
     public string ServiceToText => FormatDate(ServiceTo);
 
-    public DateOnly PaymentDueDate { get; }
+    public DateOnly PaymentDueDate => CurrentDate;
 
     public string PaymentDueDateText => FormatDate(PaymentDueDate);
 
@@ -173,12 +252,124 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
 
     public bool HasCatalogStatusMessage => !string.IsNullOrEmpty(CatalogStatusMessage);
 
+    public string ArcaEnvironment
+    {
+        get => _arcaEnvironment;
+        set
+        {
+            if (SetField(ref _arcaEnvironment, value))
+            {
+                ClearArcaConfigurationMessages();
+                OnPropertyChanged(nameof(IsArcaProduction));
+            }
+        }
+    }
+
+    public bool IsArcaProduction =>
+        string.Equals(ArcaEnvironmentName.Normalize(ArcaEnvironment), ArcaEnvironmentName.Produccion, StringComparison.Ordinal);
+
+    public string ArcaRepresentedCuit
+    {
+        get => _arcaRepresentedCuit;
+        set
+        {
+            if (SetField(ref _arcaRepresentedCuit, value))
+            {
+                ClearArcaConfigurationMessages();
+            }
+        }
+    }
+
+    public string ArcaPointOfSaleText
+    {
+        get => _arcaPointOfSaleText;
+        set
+        {
+            if (SetField(ref _arcaPointOfSaleText, value))
+            {
+                ClearArcaConfigurationMessages();
+            }
+        }
+    }
+
+    public string ArcaPfxPath
+    {
+        get => _arcaPfxPath;
+        set
+        {
+            if (SetField(ref _arcaPfxPath, value))
+            {
+                ClearArcaConfigurationMessages();
+            }
+        }
+    }
+
+    public string ArcaPfxPassword
+    {
+        get => _arcaPfxPassword;
+        set
+        {
+            if (SetField(ref _arcaPfxPassword, value))
+            {
+                ClearArcaConfigurationMessages();
+            }
+        }
+    }
+
+    public bool ArcaAllowProduction
+    {
+        get => _arcaAllowProduction;
+        set
+        {
+            if (SetField(ref _arcaAllowProduction, value))
+            {
+                ClearArcaConfigurationMessages();
+            }
+        }
+    }
+
+    public string? ArcaConfigurationValidationMessage
+    {
+        get => _arcaConfigurationValidationMessage;
+        private set => SetField(ref _arcaConfigurationValidationMessage, value);
+    }
+
+    public string? ArcaConfigurationStatusMessage
+    {
+        get => _arcaConfigurationStatusMessage;
+        private set => SetField(ref _arcaConfigurationStatusMessage, value);
+    }
+
+    public InvoiceHistoryItem? SelectedInvoiceHistoryItem
+    {
+        get => _selectedInvoiceHistoryItem;
+        set => SetField(ref _selectedInvoiceHistoryItem, value);
+    }
+
+    public string? InvoiceHistoryValidationMessage
+    {
+        get => _invoiceHistoryValidationMessage;
+        private set => SetField(ref _invoiceHistoryValidationMessage, value);
+    }
+
+    public string? InvoiceHistoryStatusMessage
+    {
+        get => _invoiceHistoryStatusMessage;
+        private set => SetField(ref _invoiceHistoryStatusMessage, value);
+    }
+
     public bool TryPrepareInvoice(out InvoiceRecord? invoice)
     {
         invoice = null;
         ValidationMessage = null;
         StatusMessage = null;
         AmountPreview = null;
+
+        if (!InvoiceIssueDateRules.TryValidate(IssueDate, CurrentDate, out var issueDateErrorMessage, _lastAuthorizedIssueDate))
+        {
+            ValidationMessage = issueDateErrorMessage;
+            return false;
+        }
 
         if (string.IsNullOrWhiteSpace(AmountText))
         {
@@ -295,8 +486,32 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         ArgumentNullException.ThrowIfNull(invoice);
 
         return $"Se guardará una emisión local por {FormatAmount(invoice.AmountCents)}.\n\n" +
+               $"Fecha de factura: {invoice.IssueDate:dd/MM/yyyy}\n" +
                $"Período: {invoice.ServiceFrom:dd/MM/yyyy} al {invoice.ServiceTo:dd/MM/yyyy}.\n" +
+               $"Vencimiento de pago: {invoice.PaymentDueDate:dd/MM/yyyy}\n" +
                "Todavía no se enviará información a ARCA. ¿Querés continuar?";
+    }
+
+    public string BuildElectronicConfirmationMessage(InvoiceRecord invoice, ArcaOperationPreview preview)
+    {
+        ArgumentNullException.ThrowIfNull(invoice);
+        ArgumentNullException.ThrowIfNull(preview);
+
+        var header = preview.IsProduction
+            ? "ATENCIÓN: se emitirá una FACTURA ELECTRÓNICA REAL ante ARCA."
+            : "Se emitirá un comprobante de prueba contra el ambiente de homologación de ARCA.";
+
+        return $"{header}\n\n" +
+               $"Ambiente: {preview.Environment}\n" +
+               $"CUIT emisor: {preview.FiscalConfiguration.Cuit}\n" +
+               $"Punto de venta: {preview.FiscalConfiguration.PointOfSale}\n" +
+               $"Comprobante: {ReceiptType}\n" +
+               $"Cliente: {CustomerType}\n" +
+               $"Importe: {FormatAmount(invoice.AmountCents)}\n" +
+               $"Fecha de factura: {invoice.IssueDate:dd/MM/yyyy}\n" +
+               $"Período: {invoice.ServiceFrom:dd/MM/yyyy} al {invoice.ServiceTo:dd/MM/yyyy}\n" +
+               $"Vencimiento de pago: {invoice.PaymentDueDate:dd/MM/yyyy}\n\n" +
+               "Si ARCA autoriza la operación, se generará número de comprobante y CAE. ¿Querés continuar?";
     }
 
     public void MarkAsSaved(InvoiceRecord invoice)
@@ -309,6 +524,188 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         AmountPreview = null;
         _amountText = string.Empty;
         OnPropertyChanged(nameof(AmountText));
+    }
+
+    public void MarkConnectionTested(ArcaConnectionTestResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        ApplyLastAuthorizedIssueDate(result.LastAuthorizedIssueDate);
+        var lastAuthorizedDateText = result.LastAuthorizedIssueDate is { } lastAuthorizedIssueDate
+            ? $", fecha {FormatDate(lastAuthorizedIssueDate)}"
+            : string.Empty;
+        ValidationMessage = null;
+        StatusMessage = $"Conexión ARCA OK en {result.Preview.Environment}. " +
+                        $"CUIT {result.Preview.FiscalConfiguration.Cuit}, " +
+                        $"PV {result.Preview.FiscalConfiguration.PointOfSale}, " +
+                        $"última Factura C autorizada: {result.LastAuthorizedReceiptNumber}{lastAuthorizedDateText}.";
+    }
+
+    public void MarkElectronicEmissionCompleted(ArcaEmissionResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        ValidationMessage = null;
+        StatusMessage = result.Status switch
+        {
+            ArcaEmissionStatus.Authorized => BuildAuthorizedStatus("Factura electrónica autorizada.", result.Invoice),
+            ArcaEmissionStatus.Recovered => BuildAuthorizedStatus("Factura electrónica recuperada por reconciliación.", result.Invoice),
+            ArcaEmissionStatus.AuthorizedWithPdfError => BuildAuthorizedStatus("Factura electrónica autorizada, pero no se pudo regenerar el PDF local.", result.Invoice),
+            ArcaEmissionStatus.Rejected => BuildRejectedStatus(result),
+            ArcaEmissionStatus.PendingReview => BuildPendingReviewStatus(result),
+            _ => "La operación finalizó con estado desconocido.",
+        };
+
+        if (result.IsAuthorized)
+        {
+            AmountPreview = null;
+            _amountText = string.Empty;
+            OnPropertyChanged(nameof(AmountText));
+        }
+    }
+
+    public void LoadInvoiceHistory(IEnumerable<InvoiceRecord> invoices)
+    {
+        ArgumentNullException.ThrowIfNull(invoices);
+
+        _selectedInvoiceHistoryItem = null;
+        OnPropertyChanged(nameof(SelectedInvoiceHistoryItem));
+        InvoiceHistory.Clear();
+
+        foreach (var invoice in invoices.OrderByDescending(invoice => invoice.Id))
+        {
+            InvoiceHistory.Add(InvoiceHistoryItem.FromInvoice(invoice));
+        }
+
+        InvoiceHistoryValidationMessage = null;
+        InvoiceHistoryStatusMessage = $"Comprobantes cargados: {InvoiceHistory.Count}.";
+    }
+
+    public bool TryGetSelectedInvoicePdfPath(out string pdfPath)
+    {
+        pdfPath = string.Empty;
+        InvoiceHistoryValidationMessage = null;
+        InvoiceHistoryStatusMessage = null;
+
+        if (SelectedInvoiceHistoryItem is null)
+        {
+            InvoiceHistoryValidationMessage = "Seleccioná un comprobante para abrir el PDF.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(SelectedInvoiceHistoryItem.PdfPath))
+        {
+            InvoiceHistoryValidationMessage = "El comprobante seleccionado no tiene PDF generado.";
+            return false;
+        }
+
+        pdfPath = SelectedInvoiceHistoryItem.PdfPath;
+        return true;
+    }
+
+    public void MarkInvoicePdfOpened()
+    {
+        InvoiceHistoryValidationMessage = null;
+        InvoiceHistoryStatusMessage = "PDF abierto.";
+    }
+
+    public void ShowInvoiceHistoryError(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        InvoiceHistoryStatusMessage = null;
+        InvoiceHistoryValidationMessage = message;
+    }
+
+    public void LoadArcaConfiguration(ArcaConfigurationForm form)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+
+        _arcaEnvironment = form.Environment;
+        _arcaRepresentedCuit = form.RepresentedCuit;
+        _arcaPointOfSaleText = form.PointOfSale.ToString(CultureInfo.InvariantCulture);
+        _arcaPfxPath = form.PfxPath;
+        _arcaPfxPassword = form.PfxPassword;
+        _arcaAllowProduction = form.AllowProduction;
+        OnPropertyChanged(nameof(ArcaEnvironment));
+        OnPropertyChanged(nameof(IsArcaProduction));
+        OnPropertyChanged(nameof(ArcaRepresentedCuit));
+        OnPropertyChanged(nameof(ArcaPointOfSaleText));
+        OnPropertyChanged(nameof(ArcaPfxPath));
+        OnPropertyChanged(nameof(ArcaPfxPassword));
+        OnPropertyChanged(nameof(ArcaAllowProduction));
+    }
+
+    public bool TryPrepareArcaConfiguration(out ArcaConfigurationForm? form)
+    {
+        form = null;
+        ArcaConfigurationValidationMessage = null;
+        ArcaConfigurationStatusMessage = null;
+
+        var environment = ArcaEnvironmentName.Normalize(ArcaEnvironment);
+
+        if (string.IsNullOrWhiteSpace(ArcaRepresentedCuit))
+        {
+            ArcaConfigurationValidationMessage = "Ingresá el CUIT emisor.";
+            return false;
+        }
+
+        if (!int.TryParse(ArcaPointOfSaleText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var pointOfSale))
+        {
+            ArcaConfigurationValidationMessage = "Ingresá un punto de venta numérico.";
+            return false;
+        }
+
+        if (pointOfSale <= 0)
+        {
+            ArcaConfigurationValidationMessage = "El punto de venta debe ser mayor que cero.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(ArcaPfxPath))
+        {
+            ArcaConfigurationValidationMessage = "Ingresá la ruta del certificado PFX.";
+            return false;
+        }
+
+        if (environment == ArcaEnvironmentName.Produccion && !ArcaAllowProduction)
+        {
+            ArcaConfigurationValidationMessage = "Para producción marcá la confirmación explícita de uso productivo.";
+            return false;
+        }
+
+        form = new ArcaConfigurationForm(
+            environment,
+            ArcaRepresentedCuit,
+            pointOfSale,
+            ArcaPfxPath,
+            ArcaPfxPassword,
+            ArcaAllowProduction);
+        return true;
+    }
+
+    public void MarkArcaConfigurationSaved(ArcaConfigurationForm form)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+
+        ArcaConfigurationValidationMessage = null;
+        ArcaConfigurationStatusMessage = $"Configuración ARCA guardada. {form.BuildSummary()}";
+    }
+
+    public void ShowArcaConfigurationError(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        ArcaConfigurationStatusMessage = null;
+        ArcaConfigurationValidationMessage = message;
+    }
+
+    public void ShowArcaError(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        StatusMessage = null;
+        ValidationMessage = message;
     }
 
     public void ShowPersistenceError()
@@ -325,6 +722,42 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
 
     private static DateOnly Today() => DateOnly.FromDateTime(DateTime.Today);
 
+    private DateOnly CurrentDate => _todayProvider();
+
+    private DateOnly GetIssueDateMinimum() =>
+        InvoiceIssueDateRules.MinimumAllowed(CurrentDate, _lastAuthorizedIssueDate);
+
+    private DateOnly GetIssueDateMinimumForPicker()
+    {
+        var minimumIssueDate = GetIssueDateMinimum();
+        var maximumIssueDate = InvoiceIssueDateRules.MaximumAllowed(CurrentDate);
+        return minimumIssueDate > maximumIssueDate
+            ? maximumIssueDate
+            : minimumIssueDate;
+    }
+
+    private void RefreshServiceDates()
+    {
+        var serviceDates = ServiceDateRules.ForIssueDate(IssueDate, PaymentDueDate);
+        ServiceFrom = serviceDates.ServiceFrom;
+        ServiceTo = serviceDates.ServiceTo;
+        OnPropertyChanged(nameof(PaymentDueDateText));
+        OnPropertyChanged(nameof(IssueDateMinimumDate));
+        OnPropertyChanged(nameof(IssueDateMaximumDate));
+    }
+
+    private void ApplyLastAuthorizedIssueDate(DateOnly? lastAuthorizedIssueDate)
+    {
+        _lastAuthorizedIssueDate = lastAuthorizedIssueDate;
+        OnPropertyChanged(nameof(IssueDateMinimumDate));
+
+        var minimumIssueDate = GetIssueDateMinimum();
+        if (IssueDate < minimumIssueDate && minimumIssueDate <= InvoiceIssueDateRules.MaximumAllowed(CurrentDate))
+        {
+            IssueDate = minimumIssueDate;
+        }
+    }
+
     private static string FormatDate(DateOnly date) =>
         date.ToString("dd/MM/yyyy", ArgentineCulture);
 
@@ -339,6 +772,38 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
         }
 
         return $"PDF local generado en {invoice.PdfPath}. Quedó pendiente de autorización en ARCA.";
+    }
+
+    private static string BuildAuthorizedStatus(string prefix, InvoiceRecord invoice)
+    {
+        var pdfStatus = string.IsNullOrWhiteSpace(invoice.PdfPath)
+            ? "El PDF local quedó pendiente de revisar."
+            : $"PDF: {invoice.PdfPath}.";
+
+        return $"{prefix} Comprobante #{invoice.ReceiptNumber}, CAE {invoice.Cae}, " +
+               $"vencimiento CAE {invoice.CaeExpirationDate:dd/MM/yyyy}. {pdfStatus}";
+    }
+
+    private static string BuildRejectedStatus(ArcaEmissionResult result)
+    {
+        var details = result.Response?.Errors.Count > 0
+            ? string.Join(" ", result.Response.Errors.Select(error => $"{error.Code}: {error.Message}"))
+            : "ARCA no informó un detalle adicional.";
+
+        return $"ARCA rechazó la factura. No quedó autorizada. Detalle: {details}";
+    }
+
+    private static string BuildPendingReviewStatus(ArcaEmissionResult result)
+    {
+        var invoice = result.Invoice;
+        var receiptText = invoice.ReceiptNumber is { } receiptNumber
+            ? $" con número tentativo {receiptNumber}"
+            : string.Empty;
+        var detail = string.IsNullOrWhiteSpace(result.DetailMessage)
+            ? string.Empty
+            : $" Detalle: {result.DetailMessage}";
+
+        return $"La operación quedó pendiente de revisión{receiptText}.{detail} No vuelvas a emitirla sin probar conexión y reconciliar.";
     }
 
     private bool TryPrepareFrequentPrice(long id, out ProductRecord? product)
@@ -444,6 +909,12 @@ public sealed class InvoiceFormViewModel : INotifyPropertyChanged
     {
         CatalogValidationMessage = null;
         CatalogStatusMessage = null;
+    }
+
+    private void ClearArcaConfigurationMessages()
+    {
+        ArcaConfigurationValidationMessage = null;
+        ArcaConfigurationStatusMessage = null;
     }
 
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

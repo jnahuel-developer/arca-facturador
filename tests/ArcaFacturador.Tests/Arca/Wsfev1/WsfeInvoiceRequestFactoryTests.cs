@@ -18,7 +18,10 @@ public class WsfeInvoiceRequestFactoryTests
         Assert.Equal(Wsfev1Constants.DocumentoConsumidorFinal, request.DocumentType);
         Assert.Equal(Wsfev1Constants.DocumentoNumeroConsumidorFinal, request.DocumentNumber);
         Assert.Equal(42, request.ReceiptNumber);
-        Assert.Equal(new DateOnly(2026, 9, 25), request.ReceiptDate);
+        Assert.Equal(new DateOnly(2026, 9, 23), request.ReceiptDate);
+        Assert.Equal(new DateOnly(2026, 9, 1), request.ServiceFrom);
+        Assert.Equal(new DateOnly(2026, 9, 30), request.ServiceTo);
+        Assert.Equal(new DateOnly(2026, 9, 25), request.PaymentDueDate);
         Assert.Equal(1250m, request.TotalAmount);
         Assert.Equal(1250m, request.NetAmount);
         Assert.Equal(0m, request.VatAmount);
@@ -38,7 +41,7 @@ public class WsfeInvoiceRequestFactoryTests
     private static InvoiceRecord CreateInvoice() => new(
         Id: 7,
         ReceiptNumber: null,
-        IssueDate: new DateOnly(2026, 9, 25),
+        IssueDate: new DateOnly(2026, 9, 23),
         ServiceFrom: new DateOnly(2026, 9, 1),
         ServiceTo: new DateOnly(2026, 9, 30),
         PaymentDueDate: new DateOnly(2026, 9, 25),

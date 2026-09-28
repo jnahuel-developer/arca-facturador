@@ -17,9 +17,10 @@
   - `MonId`: `PES`.
   - `MonCotiz`: `1`.
 - Fechas de servicio ya definidas:
-  - `FchServDesde`: primer día del mes.
-  - `FchServHasta`: último día del mes.
-  - `FchVtoPago`: fecha de emisión.
+  - `CbteFch`: fecha de factura elegida, limitada a hoy o hasta 10 días corridos hacia atrás, sin retroceder respecto del último comprobante autorizado en ARCA.
+  - `FchServDesde`: primer día del mes de la fecha de factura.
+  - `FchServHasta`: último día del mes de la fecha de factura.
+  - `FchVtoPago`: fecha actual de emisión/autorización.
 - Interpretación de aprobación, rechazo, observaciones y errores.
 - Persistencia de:
   - número fiscal autorizado;
@@ -45,11 +46,11 @@ El ejemplo versionado está en `appsettings.example.json`. El archivo real `apps
 https://wswhomo.afip.gov.ar/wsfev1/service.asmx
 ```
 
-## Límites de esta etapa
+## Evolución posterior
 
-- No se dispara automáticamente desde la pantalla principal.
-- No implementa reconciliación ante timeouts o respuestas inciertas; eso queda para `mod009`.
-- No prepara producción; eso queda para `mod010`.
+- `mod009` agrega reconciliación ante timeouts o respuestas inciertas.
+- `mod010` prepara producción y seguridad local.
+- `mod011` conecta la emisión real desde la pantalla principal.
 - No versiona certificados, claves ni tickets.
 
 La prueba manual real deberá hacerse en forma controlada una vez cargada la configuración local y confirmada la autorización del servicio en ARCA.

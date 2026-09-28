@@ -144,4 +144,19 @@ public static class ArcaLocalConfigurationLoader
         return JsonSerializer.Deserialize<LocalConfigurationFile>(stream, JsonOptions)
             ?? throw new InvalidOperationException("El archivo de configuración local está vacío.");
     }
+
+    public static void Save(string path, LocalConfigurationFile configuration)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        var directoryPath = Path.GetDirectoryName(Path.GetFullPath(path));
+        if (!string.IsNullOrWhiteSpace(directoryPath))
+        {
+            Directory.CreateDirectory(directoryPath);
+        }
+
+        using var stream = File.Create(path);
+        JsonSerializer.Serialize(stream, configuration, JsonOptions);
+    }
 }

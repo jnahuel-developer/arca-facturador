@@ -42,6 +42,6 @@ Para producción ver también [Producción y seguridad local](produccion-segurid
 - Cantidad: `1`.
 - Unidad local: `Otras unidades`.
 
-Para una fecha de emisión determinada, `FchServDesde` es el primer día del mismo mes, `FchServHasta` es el último día de ese mes y `FchVtoPago` coincide con la fecha de emisión.
+Para una fecha de factura determinada, `FchServDesde` es el primer día del mismo mes y `FchServHasta` es el último día de ese mes. La fecha de factura (`CbteFch`) puede elegirse desde la interfaz sólo entre la fecha actual y hasta 10 días corridos hacia atrás. Además, no puede ser anterior a la fecha del último comprobante autorizado en ARCA para el mismo punto de venta y tipo. `FchVtoPago` queda fijado en la fecha actual de emisión/autorización.
 
 Estas reglas son independientes de la interfaz y deberán ser reutilizadas por la persistencia, el PDF y la integración con ARCA para evitar diferencias entre representaciones.

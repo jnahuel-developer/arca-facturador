@@ -21,14 +21,13 @@ public class InvoicePdfGeneratorTests
 
             Assert.Equal(Path.GetFullPath(pdfPath), resultPath);
             Assert.StartsWith("%PDF-1.4", pdfText);
-            Assert.Contains("FACTURA C", pdfText);
-            Assert.Contains("Comprobante local: 00000007", pdfText);
-            Assert.Contains("Periodo de servicio: 01/09/2026 al 30/09/2026", pdfText);
-            Assert.Contains("Codigo: 0001", pdfText);
-            Assert.Contains("Servicio: Honorarios por servicio", pdfText);
-            Assert.Contains("Importe total: $", pdfText);
-            Assert.Contains("CAE: Pendiente de autorizacion", pdfText);
-            Assert.Contains("Vencimiento CAE: Pendiente", pdfText);
+            Assert.Contains("BORRADOR", pdfText);
+            Assert.Contains("FACTURA", pdfText);
+            Assert.Contains("Periodo Facturado Desde:", pdfText);
+            Assert.Contains("0001", pdfText);
+            Assert.Contains("Honorarios por servicio", pdfText);
+            Assert.Contains("CAE Nro:", pdfText);
+            Assert.Contains("Pendiente", pdfText);
         }
         finally
         {
@@ -65,13 +64,22 @@ public class InvoicePdfGeneratorTests
                     Cae = "74370123456789",
                     CaeExpirationDate = new DateOnly(2026, 10, 5),
                 },
-                pdfPath);
+                pdfPath,
+                InvoicePdfIssuerData.ForBrenda("20111111112", 3));
             var pdfText = Encoding.ASCII.GetString(File.ReadAllBytes(pdfPath));
 
-            Assert.Contains("Comprobante autorizado por ARCA", pdfText);
-            Assert.Contains("Numero fiscal: 00000126", pdfText);
-            Assert.Contains("CAE: 74370123456789", pdfText);
-            Assert.Contains("Vencimiento CAE: 05/10/2026", pdfText);
+            Assert.Contains("ORIGINAL", pdfText);
+            Assert.Contains("DUPLICADO", pdfText);
+            Assert.Contains("TRIPLICADO", pdfText);
+            Assert.Contains("Punto de Venta:", pdfText);
+            Assert.Contains("00003", pdfText);
+            Assert.Contains("Comp. Nro:", pdfText);
+            Assert.Contains("00000126", pdfText);
+            Assert.Contains("CUIT:", pdfText);
+            Assert.Contains("20111111112", pdfText);
+            Assert.Contains("CAE Nro:", pdfText);
+            Assert.Contains("74370123456789", pdfText);
+            Assert.Contains("05/10/2026", pdfText);
         }
         finally
         {

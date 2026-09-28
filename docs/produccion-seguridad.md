@@ -60,7 +60,9 @@ El `.gitignore` ya contempla estos casos.
 
 ## Configuración local sugerida
 
-Para producción, partir de:
+Para producción se puede usar directamente la sección `Configuración ARCA` de la pantalla principal.
+
+Como alternativa manual, partir de:
 
 ```text
 appsettings.production.example.json
@@ -87,3 +89,7 @@ Antes de emitir una factura real, realizar una prueba controlada que sólo consu
 - `FECompUltimoAutorizado` por WSFEv1.
 
 Esa consulta no emite comprobantes. La primera emisión productiva debe hacerse luego con un importe controlado y verificarse en ARCA.
+
+Desde `mod011`, esta prueba se ejecuta desde la pantalla principal con el botón `Probar conexión ARCA`.
+
+La emisión productiva real se ejecuta con `Emitir factura electrónica` y siempre muestra una confirmación previa con ambiente, CUIT, punto de venta e importe.

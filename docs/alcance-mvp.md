@@ -23,9 +23,10 @@ El producto es una herramienta local para automatizar la facturación de un nego
 
 Para cada comprobante de servicios:
 
-- `FchServDesde`: primer día del mes de emisión.
-- `FchServHasta`: último día del mes de emisión.
-- `FchVtoPago`: fecha de emisión de la factura.
+- `CbteFch`: fecha de factura elegida por el usuario, sólo entre la fecha actual y hasta 10 días corridos hacia atrás, y nunca anterior a la fecha del último comprobante autorizado en ARCA para el mismo punto de venta y tipo.
+- `FchServDesde`: primer día del mes de la fecha de factura.
+- `FchServHasta`: último día del mes de la fecha de factura.
+- `FchVtoPago`: fecha actual de emisión/autorización, no la fecha histórica elegida para la factura.
 
 ## Excluido
 

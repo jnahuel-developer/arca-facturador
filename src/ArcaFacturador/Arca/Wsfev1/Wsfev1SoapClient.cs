@@ -189,6 +189,7 @@ public sealed class Wsfev1SoapClient(HttpClient httpClient, Wsfev1Options option
         }
 
         var result = FindOptionalChildValue(voucher, "Resultado") ?? string.Empty;
+        var receiptDate = ParseOptionalDate(FindOptionalChildValue(voucher, "CbteFch"));
         var cae = FindOptionalChildValue(voucher, "CodAutorizacion")
             ?? FindOptionalChildValue(voucher, "CAE");
         var caeExpirationDate = ParseOptionalDate(
@@ -199,6 +200,7 @@ public sealed class Wsfev1SoapClient(HttpClient httpClient, Wsfev1Options option
             pointOfSale,
             receiptType,
             receiptNumber,
+            receiptDate,
             result,
             cae,
             caeExpirationDate);
