@@ -34,4 +34,4 @@ La creación del directorio, el archivo y las tablas es automática e idempotent
 
 ## Seguridad y respaldo
 
-El archivo `.db` está excluido de Git. La estrategia de respaldo e instalación definitiva se completará en `mod011`.
+El archivo `.db` está excluido de Git. Desde `mod012`, el respaldo local se realiza con `scripts\Backup-ArcaFacturadorData.ps1` y la instalación separa los binarios de `%LOCALAPPDATA%\ArcaFacturador` para evitar pérdidas durante actualizaciones.
