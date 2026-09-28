@@ -6,6 +6,7 @@
         Width="1280"
         MinHeight="760"
         MinWidth="1100"
+        Icon="Assets/app.ico"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized">
     <Window.Resources>
