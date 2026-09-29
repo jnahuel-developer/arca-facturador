@@ -2,7 +2,7 @@
 
 ## Estado
 
-`mod002` incorpora el modelo local de configuración y las reglas fijas del comprobante. `mod007` prepara la autenticación WSAA en homologación. `mod008` prepara la emisión WSFEv1 de Factura C en homologación, pero la prueba real requiere completar datos locales y certificados. Este documento no contiene credenciales reales.
+`mod002` incorpora el modelo local de configuración y las reglas fijas del comprobante. `mod007` prepara la autenticación WSAA en homologación. `mod008` prepara la emisión WSFEv1 de Factura C en homologación. `mod009` agrega reconciliación y cache de TA. `mod010` separa homologación de producción y agrega resguardos locales para evitar emisiones accidentales. Este documento no contiene credenciales reales.
 
 ## Configuración local implementada
 
@@ -23,11 +23,13 @@ La integración requerirá, como mínimo:
 - Direcciones de los servicios WSAA y WSFEv1.
 - Manejo del Ticket de Acceso y su vencimiento.
 
-La autenticación comienza en homologación en `mod007` y la emisión WSFEv1 se prepara en `mod008`. El pasaje a producción se preparará en `mod010`.
+La autenticación comienza en homologación en `mod007`, la emisión WSFEv1 se prepara en `mod008`, y el pasaje seguro a producción queda preparado en `mod010`.
 
 ## Seguridad
 
 Los certificados, claves privadas, tickets, CUIT y configuración local sensible no deben confirmarse en Git. El `.gitignore` inicial excluye extensiones habituales de certificados y claves, además de `appsettings.Local.json`.
+
+Para producción ver también [Producción y seguridad local](produccion-seguridad.md).
 
 ## Datos fijos del comprobante
 
@@ -40,6 +42,6 @@ Los certificados, claves privadas, tickets, CUIT y configuración local sensible
 - Cantidad: `1`.
 - Unidad local: `Otras unidades`.
 
-Para una fecha de emisión determinada, `FchServDesde` es el primer día del mismo mes, `FchServHasta` es el último día de ese mes y `FchVtoPago` coincide con la fecha de emisión.
+Para una fecha de factura determinada, `FchServDesde` es el primer día del mismo mes y `FchServHasta` es el último día de ese mes. La fecha de factura (`CbteFch`) puede elegirse desde la interfaz sólo entre la fecha actual y hasta 10 días corridos hacia atrás. Además, no puede ser anterior a la fecha del último comprobante autorizado en ARCA para el mismo punto de venta y tipo. `FchVtoPago` queda fijado en la fecha actual de emisión/autorización.
 
 Estas reglas son independientes de la interfaz y deberán ser reutilizadas por la persistencia, el PDF y la integración con ARCA para evitar diferencias entre representaciones.

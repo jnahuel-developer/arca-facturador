@@ -4,6 +4,7 @@ public sealed record WsfeVoucher(
     int PointOfSale,
     int ReceiptType,
     long ReceiptNumber,
+    DateOnly? ReceiptDate,
     string Result,
     string? Cae,
     DateOnly? CaeExpirationDate)

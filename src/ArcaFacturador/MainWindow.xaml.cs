@@ -1,5 +1,8 @@
 using System.IO;
+using System.Net.Http;
 using System.Windows;
+using System.Diagnostics;
+using ArcaFacturador.Arca;
 using ArcaFacturador.Documents;
 using ArcaFacturador.Persistence;
 using ArcaFacturador.Persistence.Repositories;
@@ -14,6 +17,8 @@ public partial class MainWindow : Window
     private readonly InvoiceRepository _invoiceRepository;
     private readonly ProductRepository _productRepository;
     private readonly InvoicePdfGenerator _invoicePdfGenerator;
+    private readonly ArcaInvoiceEmissionService _arcaEmissionService;
+    private readonly ArcaConfigurationStore _arcaConfigurationStore;
 
     public MainWindow()
     {
@@ -25,8 +30,16 @@ public partial class MainWindow : Window
         _invoiceRepository = new InvoiceRepository(database);
         _productRepository = new ProductRepository(database);
         _invoicePdfGenerator = new InvoicePdfGenerator();
+        _arcaConfigurationStore = new ArcaConfigurationStore();
+        _arcaEmissionService = new ArcaInvoiceEmissionService(
+            _invoiceRepository,
+            _invoicePdfGenerator,
+            new LocalArcaRuntimeFactory());
         DataContext = _viewModel;
         ReloadFrequentPrices();
+        ReloadInvoiceHistory();
+        LoadArcaConfiguration();
+        ArcaPfxPasswordBox.Password = _viewModel.ArcaPfxPassword;
     }
 
     private void ValidateButton_Click(object sender, RoutedEventArgs e)
@@ -60,6 +73,7 @@ public partial class MainWindow : Window
                 LocalDataPaths.GetInvoicePdfFilePath(storedInvoice.Id));
             var invoiceWithPdf = _invoiceRepository.UpdatePdfPath(storedInvoice.Id, pdfPath);
             _viewModel.MarkAsSaved(invoiceWithPdf);
+            ReloadInvoiceHistory();
         }
         catch (InvalidOperationException)
         {
@@ -76,6 +90,84 @@ public partial class MainWindow : Window
         catch (UnauthorizedAccessException)
         {
             _viewModel.ShowPdfError();
+        }
+    }
+
+    private async void TestArcaConnectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _viewModel.ShowArcaError("Probando conexión con ARCA. Esta operación no emite facturas.");
+            var result = await _arcaEmissionService.TestConnectionAsync();
+            _viewModel.MarkConnectionTested(result);
+        }
+        catch (Exception exception) when (IsUserFacingArcaException(exception))
+        {
+            _viewModel.ShowArcaError(ArcaUserMessageBuilder.FromException(exception));
+        }
+    }
+
+    private void SaveArcaConfigurationButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.TryPrepareArcaConfiguration(out var form) || form is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _arcaConfigurationStore.Save(form);
+            _viewModel.MarkArcaConfigurationSaved(form);
+        }
+        catch (Exception exception) when (IsUserFacingArcaException(exception))
+        {
+            _viewModel.ShowArcaConfigurationError(ArcaUserMessageBuilder.FromException(exception));
+        }
+    }
+
+    private void ArcaPfxPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        _viewModel.ArcaPfxPassword = ArcaPfxPasswordBox.Password;
+    }
+
+    private async void EmitElectronicInvoiceButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.TryPrepareInvoice(out var invoice) || invoice is null)
+        {
+            return;
+        }
+
+        ArcaOperationPreview preview;
+        try
+        {
+            preview = _arcaEmissionService.GetPreview();
+        }
+        catch (Exception exception) when (IsUserFacingArcaException(exception))
+        {
+            _viewModel.ShowArcaError(ArcaUserMessageBuilder.FromException(exception));
+            return;
+        }
+
+        var result = MessageBox.Show(
+            _viewModel.BuildElectronicConfirmationMessage(invoice, preview),
+            preview.IsProduction ? "Confirmar factura electrónica real" : "Confirmar emisión ARCA",
+            MessageBoxButton.YesNo,
+            preview.IsProduction ? MessageBoxImage.Warning : MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            var emissionResult = await _arcaEmissionService.EmitAsync(invoice);
+            _viewModel.MarkElectronicEmissionCompleted(emissionResult);
+            ReloadInvoiceHistory();
+        }
+        catch (Exception exception) when (IsUserFacingArcaException(exception))
+        {
+            _viewModel.ShowArcaError(ArcaUserMessageBuilder.FromException(exception));
         }
     }
 
@@ -163,4 +255,51 @@ public partial class MainWindow : Window
     {
         _viewModel.LoadFrequentPrices(_productRepository.GetAll(), selectedProductId);
     }
+
+    private void RefreshInvoiceHistoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        ReloadInvoiceHistory();
+    }
+
+    private void OpenInvoicePdfButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_viewModel.TryGetSelectedInvoicePdfPath(out var pdfPath))
+        {
+            return;
+        }
+
+        if (!File.Exists(pdfPath))
+        {
+            _viewModel.ShowInvoiceHistoryError("No se encontró el PDF del comprobante seleccionado.");
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo(pdfPath) { UseShellExecute = true });
+        _viewModel.MarkInvoicePdfOpened();
+    }
+
+    private void ReloadInvoiceHistory()
+    {
+        _viewModel.LoadInvoiceHistory(_invoiceRepository.GetAll());
+    }
+
+    private void LoadArcaConfiguration()
+    {
+        try
+        {
+            _viewModel.LoadArcaConfiguration(_arcaConfigurationStore.LoadForm());
+        }
+        catch (Exception exception) when (IsUserFacingArcaException(exception))
+        {
+            _viewModel.ShowArcaConfigurationError(ArcaUserMessageBuilder.FromException(exception));
+        }
+    }
+
+    private static bool IsUserFacingArcaException(Exception exception) =>
+        exception is FileNotFoundException
+            or InvalidOperationException
+            or UnauthorizedAccessException
+            or IOException
+            or HttpRequestException
+            or ArcaServiceException;
 }

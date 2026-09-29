@@ -82,7 +82,7 @@ public sealed class WsfeInvoiceAuthorizationService(
         }
 
         var updatedInvoice = response.IsAuthorized
-            ? AuthorizeInvoice(preparedInvoice, response)
+            ? AuthorizeInvoice(preparedInvoice, response, fiscalConfiguration)
             : RejectInvoice(preparedInvoice);
 
         return new WsfeAuthorizationOutcome(updatedInvoice, response);
@@ -134,10 +134,13 @@ public sealed class WsfeInvoiceAuthorizationService(
             CaeExpirationDate: voucher.CaeExpirationDate,
             Observations: [],
             Errors: []);
-        return AuthorizeInvoice(invoice, response);
+        return AuthorizeInvoice(invoice, response, fiscalConfiguration);
     }
 
-    private InvoiceRecord AuthorizeInvoice(InvoiceRecord invoice, WsfeCaeResponse response)
+    private InvoiceRecord AuthorizeInvoice(
+        InvoiceRecord invoice,
+        WsfeCaeResponse response,
+        FiscalConfiguration fiscalConfiguration)
     {
         var pdfPath = invoice.PdfPath ?? LocalDataPaths.GetInvoicePdfFilePath(invoice.Id);
         var updatedInvoice = invoiceRepository.UpdateAuthorizationResult(
@@ -147,7 +150,10 @@ public sealed class WsfeInvoiceAuthorizationService(
             response.Cae,
             response.CaeExpirationDate,
             pdfPath);
-        pdfGenerator.Generate(updatedInvoice, pdfPath);
+        pdfGenerator.Generate(
+            updatedInvoice,
+            pdfPath,
+            InvoicePdfIssuerData.ForBrenda(fiscalConfiguration.Cuit, fiscalConfiguration.PointOfSale));
         return updatedInvoice;
     }
 

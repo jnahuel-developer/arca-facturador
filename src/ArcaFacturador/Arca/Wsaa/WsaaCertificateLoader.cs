@@ -19,6 +19,19 @@ public sealed class WsaaCertificateLoader
             throw new InvalidOperationException("El certificado configurado no contiene clave privada.");
         }
 
+        var now = DateTimeOffset.Now;
+        if (now < certificate.NotBefore)
+        {
+            certificate.Dispose();
+            throw new InvalidOperationException("El certificado configurado todavía no está vigente.");
+        }
+
+        if (now > certificate.NotAfter)
+        {
+            certificate.Dispose();
+            throw new InvalidOperationException("El certificado configurado está vencido.");
+        }
+
         return certificate;
     }
 
